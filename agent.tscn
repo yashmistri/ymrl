@@ -1,0 +1,22 @@
+[gd_scene format=3 uid="uid://cu1kxr3omgvh5"]
+
+[ext_resource type="Script" uid="uid://cp41v7s1d7juy" path="res://agent.gd" id="1_dhb2b"]
+[ext_resource type="Script" uid="uid://pcfrm2jrk4kp" path="res://ai.gd" id="2_8l2ru"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_hlpfh"]
+radius = 6.0827627
+
+[node name="Agent" type="CharacterBody2D" unique_id=1930894846]
+motion_mode = 1
+script = ExtResource("1_dhb2b")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1550154778]
+shape = SubResource("CircleShape2D_hlpfh")
+
+[node name="Polygon2D" type="Polygon2D" parent="." unique_id=1666629939]
+polygon = PackedVector2Array(-8, -8, 12, 0, -7, 8, -5, 0)
+
+[node name="AI" type="Node2D" parent="." unique_id=1684241913]
+script = ExtResource("2_8l2ru")
+control_mode = 2
+metadata/_custom_type_script = "uid://drd4dpupr55dk"
