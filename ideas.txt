@@ -1,0 +1,6 @@
+training ideas:
+	seek target (moving or stationary or last seen location)
+	run away from target
+	hide from target
+	stay in shadows
+	stay in light

@@ -6,8 +6,33 @@
 [node name="Training" type="Node" unique_id=1757948540]
 
 [node name="Main" parent="." unique_id=239850656 instance=ExtResource("2_xggwa")]
+position = Vector2(-612, -384)
+
+[node name="Main2" parent="." unique_id=1924929219 instance=ExtResource("2_xggwa")]
+position = Vector2(-616, 389)
+
+[node name="Main3" parent="." unique_id=1925391971 instance=ExtResource("2_xggwa")]
+position = Vector2(624, -384)
+
+[node name="Main4" parent="." unique_id=1184082505 instance=ExtResource("2_xggwa")]
+position = Vector2(620, 389)
+
+[node name="Main5" parent="." unique_id=1409997388 instance=ExtResource("2_xggwa")]
+position = Vector2(-597, 1170)
+
+[node name="Main6" parent="." unique_id=1931485447 instance=ExtResource("2_xggwa")]
+position = Vector2(-601, 1943)
+
+[node name="Main7" parent="." unique_id=1477601589 instance=ExtResource("2_xggwa")]
+position = Vector2(639, 1170)
+
+[node name="Main8" parent="." unique_id=1934745765 instance=ExtResource("2_xggwa")]
+position = Vector2(635, 1943)
 
 [node name="Sync" type="Node" parent="." unique_id=493180403]
-process_mode = 3
 script = ExtResource("1_bhfuv")
-metadata/_custom_type_script = "uid://d1xvoux2rr6fi"
+speed_up = 10.0
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=1231266828]
+position = Vector2(11, 737)
+zoom = Vector2(0.2, 0.2)

@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://chssaiuc3y0ll"]
+
+[ext_resource type="Script" uid="uid://coprvdmwywes7" path="res://addons/godot_rl_agents/sync.gd" id="1_gx3pq"]
+[ext_resource type="PackedScene" uid="uid://cxwtu6p5hmvi5" path="res://main.tscn" id="2_ip2ow"]
+
+[node name="TrainingSolo" type="Node" unique_id=1221673137]
+
+[node name="Sync" type="Node" parent="." unique_id=1648796955]
+script = ExtResource("1_gx3pq")
+metadata/_custom_type_script = "uid://coprvdmwywes7"
+
+[node name="Main" parent="." unique_id=239850656 instance=ExtResource("2_ip2ow")]
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=1311421374]
