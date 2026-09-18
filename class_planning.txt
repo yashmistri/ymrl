@@ -1,0 +1,29 @@
+soldier:
+	stats:
+		health: 100
+		stamina: 100
+		speed
+		damage
+		attack speed?
+	abilities:
+		attack: short range hitscan w cooldown. -stamina -20dmg
+		swing: medium range aoe w cooldown. --stamina -10dmg +health
+		sprint: -stamina
+		walk: +stamina
+		stand: ++stamina
+	training plan:
+		fight swarms of dumb enemies
+			enemies chase player and attack
+			constantly lose health. attacking enemies gain health
+		rewards:
+			gain or lose percent health
+			gain or lose percent stamina
+			+hit enemy
+			++kill enemy
+			-get hit
+			--die
+		observations:
+			position
+			current_health
+			vision: short range raycasts in circle
+			

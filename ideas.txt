@@ -4,3 +4,41 @@ training ideas:
 	hide from target
 	stay in shadows
 	stay in light
+game idea:
+world filled with resources. Slaves farm resources and carry resources. Creatures attack miners
+	Soldiers protect miners and hunt creatures. Commanders give orders to squads of soldiers
+	generals give orders to commanders. generals try to get as much resource as they can
+	players manage squad either in a faction or not
+		if in a faction players must give some of their resource
+	squad members can get enslaved and become miners
+subclasses:
+	slaves: miners, carriers
+	creatures: wolves, dragons
+	soldiers: fighter, tank, mage, healer, ranger
+	commanders:
+		greedy: max resource and loot
+		leader: preserve squad
+		hero: save slaves
+		slavemaster: recruit slaves
+		ambitious: recruit soldiers and become general
+	generals: different personality types and goals?
+		greedy: wants to maximize total resource
+		savvy: wants to max resource rate
+		aggressive: wants to conquer other factions
+		prideful: wants resource in order to build statues
+		chaos: just wants to make chaos in the world
+		
+game ai systems:
+	use reinforcement learning and traditional procedural ai
+	miners get basic rules or simplest training
+	how to train multiple models?
+		keep every model as it is and only train one model at a time
+		start with procedural ai for everyone except first class trained?
+		ie train soldiers against the same dragon then train the dragon against the latest ai model of soldiers
+		then train the soldiers again on the improved dragon and so on and so on
+	training scenarios:
+		miners: wander around until they find resource. then mine some and bring it back home
+			at the same time talk to other miners and let them know approx where the resource is
+		soldiers: 
+			fight soldiers. if one dies -10 reward and tp it far away
+			fight dumb swarm of enemies.

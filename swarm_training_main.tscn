@@ -1,0 +1,28 @@
+[gd_scene format=3 uid="uid://boyxo5mwdp3ys"]
+
+[ext_resource type="Script" uid="uid://brk8ybjdbgeuq" path="res://swarm_main.gd" id="1_ddbwl"]
+[ext_resource type="PackedScene" uid="uid://cbqvpr1if15rn" path="res://soldier.tscn" id="2_2a5ws"]
+[ext_resource type="PackedScene" uid="uid://ds7olhulo7qjt" path="res://creature.tscn" id="3_ach40"]
+
+[node name="SwarmTraining" type="Node2D" unique_id=239850656]
+script = ExtResource("1_ddbwl")
+
+[node name="bg" type="Polygon2D" parent="." unique_id=1471678133]
+z_index = -1
+color = Color(0, 0, 0, 1)
+polygon = PackedVector2Array(-562, -314, 558, -308, 559, 303, -562, 303)
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=465148724]
+
+[node name="Soldier" parent="." unique_id=1930894846 instance=ExtResource("2_2a5ws")]
+position = Vector2(-2, -1)
+
+[node name="Creature" parent="." unique_id=186930885 instance=ExtResource("3_ach40")]
+position = Vector2(53, -3)
+
+[node name="StaticBody2D" type="StaticBody2D" parent="." unique_id=695705982]
+collision_layer = 4
+collision_mask = 0
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="StaticBody2D" unique_id=384833378]
+polygon = PackedVector2Array(-8, -244, 92, -246, 195, -164, 263, -71, 265, 68, 200, 142, 84, 220, -37, 224, -142, 175, -214, 83, -213, -62, -107, -182, -11, -243, -14, -280, -276, -283, -280, 273, 341, 267, 349, -284, 0, -282)

@@ -1,0 +1,136 @@
+[gd_scene format=3 uid="uid://cbqvpr1if15rn"]
+
+[ext_resource type="Script" uid="uid://cp41v7s1d7juy" path="res://soldier.gd" id="1_ba3fx"]
+[ext_resource type="Script" uid="uid://dy26xgfntqj1a" path="res://soldier_ai.gd" id="2_i6re7"]
+[ext_resource type="Texture2D" uid="uid://b5am4vctikk0y" path="res://Assets/kenney_roguelike-characters/Spritesheet/roguelikeChar_transparent.png" id="3_8swxs"]
+[ext_resource type="Script" uid="uid://dhwvkwy5hyw88" path="res://addons/godot_rl_agents/sensors/sensors_2d/RaycastSensor2D.gd" id="3_i6re7"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hlpfh"]
+atlas = ExtResource("3_8swxs")
+region = Rect2(0, 187, 16, 16)
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_hlpfh"]
+radius = 6.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_7jswi"]
+radius = 14.0
+
+[node name="Soldier" type="CharacterBody2D" unique_id=1930894846]
+collision_mask = 7
+motion_mode = 1
+script = ExtResource("1_ba3fx")
+
+[node name="AI" type="Node2D" parent="." unique_id=1684241913]
+script = ExtResource("2_i6re7")
+metadata/_custom_type_script = "uid://drd4dpupr55dk"
+
+[node name="RaycastSensor2D" type="Node2D" parent="AI" unique_id=1241334545]
+script = ExtResource("3_i6re7")
+collision_mask = 6
+ray_length = 100
+metadata/_custom_type_script = "uid://dhwvkwy5hyw88"
+
+[node name="node_0_1" type="RayCast2D" parent="AI/RaycastSensor2D" unique_id=1787478001]
+enabled = false
+target_position = Vector2(-98.07853, -19.509031)
+collision_mask = 6
+
+[node name="node_1_1" type="RayCast2D" parent="AI/RaycastSensor2D" unique_id=673303364]
+enabled = false
+target_position = Vector2(-83.146965, -55.557022)
+collision_mask = 6
+
+[node name="node_2_1" type="RayCast2D" parent="AI/RaycastSensor2D" unique_id=672746437]
+enabled = false
+target_position = Vector2(-55.557022, -83.146965)
+collision_mask = 6
+
+[node name="node_3_1" type="RayCast2D" parent="AI/RaycastSensor2D" unique_id=1222653886]
+enabled = false
+target_position = Vector2(-19.509031, -98.07853)
+collision_mask = 6
+
+[node name="node_4_1" type="RayCast2D" parent="AI/RaycastSensor2D" unique_id=358261137]
+enabled = false
+target_position = Vector2(19.509031, -98.07853)
+collision_mask = 6
+
+[node name="node_5_1" type="RayCast2D" parent="AI/RaycastSensor2D" unique_id=1971172716]
+enabled = false
+target_position = Vector2(55.557022, -83.146965)
+collision_mask = 6
+
+[node name="node_6_1" type="RayCast2D" parent="AI/RaycastSensor2D" unique_id=154670950]
+enabled = false
+target_position = Vector2(83.146965, -55.557022)
+collision_mask = 6
+
+[node name="node_7_1" type="RayCast2D" parent="AI/RaycastSensor2D" unique_id=1108433065]
+enabled = false
+target_position = Vector2(98.07853, -19.509031)
+collision_mask = 6
+
+[node name="node_8_1" type="RayCast2D" parent="AI/RaycastSensor2D" unique_id=629797998]
+enabled = false
+target_position = Vector2(98.07853, 19.509031)
+collision_mask = 6
+
+[node name="node_9_1" type="RayCast2D" parent="AI/RaycastSensor2D" unique_id=799285669]
+enabled = false
+target_position = Vector2(83.146965, 55.557022)
+collision_mask = 6
+
+[node name="node_10_1" type="RayCast2D" parent="AI/RaycastSensor2D" unique_id=347567257]
+enabled = false
+target_position = Vector2(55.557022, 83.146965)
+collision_mask = 6
+
+[node name="node_11_1" type="RayCast2D" parent="AI/RaycastSensor2D" unique_id=379244625]
+enabled = false
+target_position = Vector2(19.509031, 98.07853)
+collision_mask = 6
+
+[node name="node_12_1" type="RayCast2D" parent="AI/RaycastSensor2D" unique_id=2128148540]
+enabled = false
+target_position = Vector2(-19.509031, 98.07853)
+collision_mask = 6
+
+[node name="node_13_1" type="RayCast2D" parent="AI/RaycastSensor2D" unique_id=188088136]
+enabled = false
+target_position = Vector2(-55.557022, 83.146965)
+collision_mask = 6
+
+[node name="node_14_1" type="RayCast2D" parent="AI/RaycastSensor2D" unique_id=782753281]
+enabled = false
+target_position = Vector2(-83.146965, 55.557022)
+collision_mask = 6
+
+[node name="node_15_1" type="RayCast2D" parent="AI/RaycastSensor2D" unique_id=1013870118]
+enabled = false
+target_position = Vector2(-98.07853, 19.509031)
+collision_mask = 6
+
+[node name="line" type="Line2D" parent="." unique_id=1668618548]
+visible = false
+points = PackedVector2Array(0, 0, 22.935, 0)
+width = 2.91
+default_color = Color(0.20662484, 0.6228366, 0, 1)
+
+[node name="Sprite" type="Sprite2D" parent="." unique_id=1528696743]
+texture_filter = 1
+texture = SubResource("AtlasTexture_hlpfh")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1550154778]
+shape = SubResource("CircleShape2D_hlpfh")
+
+[node name="ray" type="RayCast2D" parent="." unique_id=876772991]
+target_position = Vector2(20, 0)
+collision_mask = 2
+
+[node name="swing_area" type="Area2D" parent="." unique_id=452703923]
+collision_layer = 0
+collision_mask = 2
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="swing_area" unique_id=1732488887]
+position = Vector2(10, 0)
+shape = SubResource("CircleShape2D_7jswi")

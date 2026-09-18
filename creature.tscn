@@ -1,0 +1,35 @@
+[gd_scene format=3 uid="uid://ds7olhulo7qjt"]
+
+[ext_resource type="Script" uid="uid://dt3qlej1wq0cc" path="res://creature.gd" id="1_nugsn"]
+[ext_resource type="Texture2D" uid="uid://b5am4vctikk0y" path="res://Assets/kenney_roguelike-characters/Spritesheet/roguelikeChar_transparent.png" id="3_frg5k"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hlpfh"]
+atlas = ExtResource("3_frg5k")
+region = Rect2(17, 51, 16, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_1k0n7"]
+atlas = ExtResource("3_frg5k")
+region = Rect2(748, 102, 16, 16)
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_hlpfh"]
+radius = 6.0
+
+[node name="Creature" type="CharacterBody2D" unique_id=1930894846]
+collision_layer = 2
+collision_mask = 7
+motion_mode = 1
+script = ExtResource("1_nugsn")
+
+[node name="Sprite" type="Sprite2D" parent="." unique_id=1528696743]
+texture_filter = 1
+texture = SubResource("AtlasTexture_hlpfh")
+
+[node name="Sprite2" type="Sprite2D" parent="Sprite" unique_id=1614627705]
+texture_filter = 1
+texture = SubResource("AtlasTexture_1k0n7")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1550154778]
+shape = SubResource("CircleShape2D_hlpfh")
+
+[node name="ray" type="RayCast2D" parent="." unique_id=1000470691]
+target_position = Vector2(20, 0)
