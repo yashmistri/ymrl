@@ -42,3 +42,17 @@ game ai systems:
 		soldiers: 
 			fight soldiers. if one dies -10 reward and tp it far away
 			fight dumb swarm of enemies.
+
+misc ideas:
+	how to give characters look direction
+	how to calculate 2d visibility box and give information to ai
+grok ideas:
+	Rule of thumb: if a human can learn the task in under a minute of watching, and you can write a dense reward, it belongs on your GPU.
+	don't train a commander to order soldiers who are still learning themselves. Only train commanders to order completed soldier neural nets
+	generals need too much time to see the reward. therefore dont use RL or only let human players be generals, or train generals on abstraction
+	Cover rays = geometry-aware ray features, or tagged hits; not mandatory as a separate system.
+		Recommendation for a Kenshi clone: authored cover features + let the policy learn the timing. Pure discovery is a research flex, not a production shortcut.
+	First skills: under a minute, ideally under 30 seconds.
+	Commanders: train against finished (or scripted) soldiers.
+	Wolf: freeze or use a snapshot pool; simultaneous training is optional advanced mode.
+	General: train on a sped-up abstract map, not 60× Kenshi.

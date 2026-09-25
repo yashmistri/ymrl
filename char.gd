@@ -9,8 +9,10 @@ var max_health:float = 100.0
 var current_health:float
 var move:Vector2
 var attack_range:float =20.0
-var attack_cd:float=1.0
+var attack_cd:float=0.7
+var attack_startup:float=0.4
 var can_attack:bool=true
+var is_attacking:bool=false
 
 @onready var ai: AIController2D = $AI
 func _ready():
@@ -28,6 +30,7 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 
+
 #0.2 sec delay before attacking? slow down while attacking?
 #param relative target position
 #returns true if attack kills target
@@ -35,6 +38,10 @@ func attack(target_pos:Vector2)-> bool:
 	var is_kill:=false
 	if not can_attack:
 		return is_kill
+	#wait 0.2 sec before attacking
+	is_attacking=true
+	await get_tree().create_timer(attack_startup).timeout
+	is_attacking=false
 	target_pos = target_pos.normalized()*attack_range
 	var ray:RayCast2D= $ray
 	ray.target_position = target_pos

@@ -12,18 +12,24 @@ soldier:
 		walk: +stamina
 		stand: ++stamina
 	training plan:
-		fight swarms of dumb enemies
+	fight swarms of dumb enemies
 			enemies chase player and attack
 			constantly lose health. attacking enemies gain health
 		rewards:
-			gain or lose percent health
-			gain or lose percent stamina
+			gain or lose fraction health
+			gain or lose fraction stamina
 			+hit enemy
 			++kill enemy
 			-get hit
 			--die
 		observations:
-			position
-			current_health
-			vision: short range raycasts in circle
-			
+			position normalized
+			current_health normalized
+			vision: built in node- short range raycasts in circle
+	soldiers free for all
+	squad of soldiers vs dragon
+	two or more squads fight
+		combat rewards and:
+			-hit squadmates
+		combat obs and:
+			how to get seen character squad id?

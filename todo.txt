@@ -1,2 +1,4 @@
 fall 2026 goals:
 	figure out squad vs squad combat. training, balance, etc
+
+todo:
