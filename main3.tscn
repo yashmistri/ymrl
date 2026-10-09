@@ -1,0 +1,45 @@
+[gd_scene format=3 uid="uid://b4sd25hgd6cy"]
+
+[ext_resource type="Script" uid="uid://derma1b673fbr" path="res://soldier3_ai.gd" id="1_4vbj5"]
+[ext_resource type="Script" uid="uid://b6i2fwwbr2p83" path="res://soldier3.gd" id="1_5tyq8"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_hlpfh"]
+size = Vector3(100, 1, 100)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_hlpfh"]
+size = Vector3(100, 1, 100)
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_7jswi"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_hlpfh"]
+
+[node name="Main3" type="Node3D" unique_id=216114808]
+
+[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=1886913713]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="StaticBody3D" unique_id=826778582]
+mesh = SubResource("BoxMesh_hlpfh")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=731915123]
+shape = SubResource("BoxShape3D_hlpfh")
+
+[node name="Soldier" type="CharacterBody3D" parent="." unique_id=141195172]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+script = ExtResource("1_5tyq8")
+
+[node name="AI" type="Node3D" parent="Soldier" unique_id=1491074810]
+script = ExtResource("1_4vbj5")
+metadata/_custom_type_script = "uid://b1q1vbibwr38m"
+
+[node name="Col" type="CollisionShape3D" parent="Soldier" unique_id=827427539]
+shape = SubResource("CapsuleShape3D_7jswi")
+
+[node name="Mesh" type="MeshInstance3D" parent="Soldier" unique_id=261750292]
+mesh = SubResource("CapsuleMesh_hlpfh")
+
+[node name="ray" type="RayCast3D" parent="Soldier" unique_id=1023068129]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=962738175]
+transform = Transform3D(1, 0, 0, 0, 0.7071068, 0.7071068, 0, -0.7071068, 0.7071068, 0, 9, 0)
+shadow_enabled = true
