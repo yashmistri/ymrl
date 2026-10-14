@@ -1,14 +1,19 @@
 extends AIController3D
 
-@onready var player:CharacterBody3D=$".."
+@onready var char:CharacterBody3D=$".."
 var target:Node3D
 
 var target_rel 
 func get_obs() -> Dictionary:
 	# Return observations (e.g., player position, environment state)
+	var result :Array = []
+	var wallray_obs = $"../WallSensor".get_observation()
+	result.append_array(wallray_obs)
 	
-	return {"obs": [
-		]}
+	var charray_obs = $"../CharSensor".get_observation()
+	result.append_array(charray_obs)
+	
+	return {"obs": result}
 	
 
 func get_reward() -> float:
@@ -34,11 +39,13 @@ func get_action_space() -> Dictionary:
 	}
 
 func set_action(action:Dictionary) -> void:
+	if done:
+		return
 	# Apply the action (e.g., move character based on action values)
-	var aim:Vector3 = Vector3(action["aim"][0],0.0,action["aim"][1])
-	var reach:=30.0
-	aim *= reach
-	player.requested_move = Vector2(action["move"][0],action["move"][1])
+	char.aim = Vector3(action["aim"][0],0.0,action["aim"][1])
+	var reach:=5.0
+	char.aim *= reach
+	char.requested_move = Vector2(action["move"][0],action["move"][1])
 	if action["attack"] == 1:
-		player.attack(aim)
+		char.attack(char.aim)
 	pass

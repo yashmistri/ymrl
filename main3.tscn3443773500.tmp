@@ -1,0 +1,84 @@
+[gd_scene format=3 uid="uid://b4sd25hgd6cy"]
+
+[ext_resource type="Script" uid="uid://derma1b673fbr" path="res://soldier3_ai.gd" id="1_4vbj5"]
+[ext_resource type="Script" uid="uid://b6i2fwwbr2p83" path="res://soldier3.gd" id="1_5tyq8"]
+[ext_resource type="Script" uid="uid://1cl4dbv1tjtq" path="res://main_3.gd" id="1_r6fop"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_hlpfh"]
+size = Vector3(100, 1, 100)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_hlpfh"]
+size = Vector3(100, 1, 100)
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_7jswi"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_hlpfh"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_7jswi"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ttalx"]
+albedo_color = Color(0.53320026, 0.5408519, 0.494061, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_hlpfh"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7jswi"]
+albedo_color = Color(1, 0, 0, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_hlpfh"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6ve0f"]
+albedo_color = Color(0.37413925, 0.37413928, 0.37413922, 1)
+
+[node name="Main3" type="Node3D" unique_id=216114808]
+script = ExtResource("1_r6fop")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="." unique_id=1886913713]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+collision_mask = 3
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="StaticBody3D" unique_id=826778582]
+mesh = SubResource("BoxMesh_hlpfh")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=731915123]
+shape = SubResource("BoxShape3D_hlpfh")
+
+[node name="Soldier" type="CharacterBody3D" parent="." unique_id=141195172]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+collision_layer = 2
+script = ExtResource("1_5tyq8")
+
+[node name="AI" type="Node3D" parent="Soldier" unique_id=1491074810]
+script = ExtResource("1_4vbj5")
+metadata/_custom_type_script = "uid://b1q1vbibwr38m"
+
+[node name="Col" type="CollisionShape3D" parent="Soldier" unique_id=827427539]
+shape = SubResource("CapsuleShape3D_7jswi")
+
+[node name="Mesh" type="MeshInstance3D" parent="Soldier" unique_id=261750292]
+mesh = SubResource("CapsuleMesh_hlpfh")
+
+[node name="forward" type="MeshInstance3D" parent="Soldier/Mesh" unique_id=198447815]
+transform = Transform3D(0.2503533, 0, 0, 0, -1.6029382e-08, 0.2503533, 0, -0.3667095, -1.0943292e-08, 0, 0.86022353, -0.27007627)
+mesh = SubResource("CapsuleMesh_7jswi")
+surface_material_override/0 = SubResource("StandardMaterial3D_ttalx")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Soldier/Mesh" unique_id=1829434375]
+transform = Transform3D(0.38109845, 0, 0, 0, -1.6658342e-08, 0.38109845, 0, -0.38109845, -1.6658342e-08, 0, 0.45730424, -0.619895)
+mesh = SubResource("CylinderMesh_hlpfh")
+surface_material_override/0 = SubResource("StandardMaterial3D_7jswi")
+
+[node name="ray" type="RayCast3D" parent="Soldier" unique_id=1023068129]
+target_position = Vector3(0, 0, -1)
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=962738175]
+transform = Transform3D(1, 0, 0, 0, 0.7071068, 0.7071068, 0, -0.7071068, 0.7071068, 0, 9, 0)
+shadow_enabled = true
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1492015539]
+transform = Transform3D(1, 0, 0, 0, 0.82054496, 0.5715821, 0, -0.5715821, 0.82054496, 0, 25.453281, 45.542202)
+current = true
+fov = 30.1
+
+[node name="Cursor" type="MeshInstance3D" parent="." unique_id=1355325548]
+mesh = SubResource("SphereMesh_hlpfh")
+surface_material_override/0 = SubResource("StandardMaterial3D_6ve0f")

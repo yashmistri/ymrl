@@ -1,0 +1,9 @@
+train, export to .onnx for inference in godot and save to zip for later training
+
+python stable_baselines3_example.py --onnx_export_path=model.onnx --save_model_path=model.zip
+
+resume training and save to same file
+python stable_baselines3_example.py --resume_model_path=model.zip --save_model_path=model.zip
+
+run inference
+python stable_baselines3_example.py --resume_model_path=model.zip --inference

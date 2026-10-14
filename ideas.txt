@@ -44,6 +44,7 @@ game ai systems:
 			fight dumb swarm of enemies.
 
 misc ideas:
+	soldiers move slower when walking backwards?
 	how to give characters look direction
 	how to calculate 2d visibility box and give information to ai
 grok ideas:

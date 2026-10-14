@@ -1,4 +1,12 @@
 fall 2026 goals:
 	figure out squad vs squad combat. training, balance, etc
-
+	maybe start with one ai vs zombies
 todo:
+	x how to send both if an attack kills and the percent of the targets health dealt in damage
+	make damage log instead of print statements
+	make ai walking look smoother and not random. maybe do a step function where action= 0 to 0.5 is walking and 0.5 to 1.0 is running
+	make reset function
+	make one agent vs zombies scenario
+		reset resets agent to center and all zombies killed
+		zombies spawn randomly around arena after delay but not if player steps on spawn point?
+		

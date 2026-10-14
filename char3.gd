@@ -1,28 +1,39 @@
 extends CharacterBody3D
 class_name Char3
 
-var speed_stat = 100.0
+var speed_stat = 30.0
 
 var current_speed:float
 var damage:float = 10.0
 var max_health:float = 100.0
 var current_health:float
 var move:Vector3
-var attack_range:float =20.0
+var attack_range:float =1.0
 var attack_cd:float=0.7
 var attack_startup:float=0.4
 var can_attack:bool=true
 var is_attacking:bool=false
+var aim:Vector3
+static var attack_reward_factor:float = 1.0
+static var damage_punish_factor:float = 1.0
 
+var is_dead:bool=false
 @onready var ai: AIController3D = $AI
 func _ready():
 	current_speed = speed_stat
 	current_health = max_health
 
 func _physics_process(delta: float) -> void:
-	if is_queued_for_deletion():
+	if is_dead:
 		return
-	move = move.limit_length()
+	
+	move = move.normalized()
+	var mesh :MeshInstance3D = $Mesh
+	if ai.heuristic == "human":
+		aim = $"../Cursor".position
+	#mesh.look_at(position+move)
+	mesh.look_at(aim)
+	mesh.rotation.x = 0.0
 	if move:
 		velocity = move * current_speed
 	else:
@@ -33,11 +44,11 @@ func _physics_process(delta: float) -> void:
 
 #0.2 sec delay before attacking? slow down while attacking?
 #param relative target position
-#returns true if attack kills target
-func attack(target_pos:Vector3)-> bool:
-	var is_kill:=false
-	if not can_attack:
-		return is_kill
+#rewards attacker if attack hits by percent of targets health dealt and if attack kills
+func attack(target_pos:Vector3):
+	if not can_attack or is_attacking:
+		return
+	print("attack")
 	#wait 0.2 sec before attacking
 	is_attacking=true
 	await get_tree().create_timer(attack_startup).timeout
@@ -48,28 +59,38 @@ func attack(target_pos:Vector3)-> bool:
 	ray.force_raycast_update()
 	var col =ray.get_collider()
 	if col:
-		is_kill = col.take_damage(damage)
+		var dmg_info:Dictionary = col.take_damage(damage)
+		var percent_damage :float = dmg_info["percent_damage"]
+		var is_kill:bool = dmg_info["is_kill"]
+		ai.reward += clamp(percent_damage,-1.0,1.0)*attack_reward_factor
+		ai.reward += 10.0 if is_kill else 0.0
 		print("hit target")
 	can_attack = false
 	start_attack_cd()
-	if is_kill and ai:
-		ai.reward += 1.0
-	return is_kill
+	return
 
 func start_attack_cd():
 	await get_tree().create_timer(attack_cd).timeout
 	can_attack=true
 
-#return true if char dies after taking this damage
-func take_damage(damage) -> bool:
+
+#returns dictionary with two values:
+#true if taking this damage causes death
+#percent of targets health removed by attack
+func take_damage(damage:float) -> Dictionary:
+	var is_kill = false
 	if is_queued_for_deletion():
-		return false
+		return {"is_kill": is_kill,"percent_damage": 0.0}
+	var percent_damage:float = damage/current_health
 	current_health = clamp(current_health-damage,0.0,max_health)
+	
+	ai.reward -= clamp(percent_damage,-1.0,1.0)*damage_punish_factor
 	if current_health == 0.0:
 		die()
-		return true
-	return false
+		is_kill = true
+	return {"is_kill": is_kill,"percent_damage": percent_damage}
 
 func die():
 	print("die")
+	is_dead=true
 	queue_free()
