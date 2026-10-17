@@ -11,6 +11,7 @@ func _ready():
 	spawn_pos = global_position
 	attack_range = 1.0
 	current_stamina = max_stamina
+	speed_stat=5.0
 	if ai:
 		ai.init(self)
 	$hit.visible = false
@@ -32,7 +33,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		#var m_pos = get_local_mouse_position()
 		var cursor = $"../Cursor"
 		attack(cursor.position)
-		$hit.flash(cursor.position)
 	if event.is_action_pressed("run"):
 		is_running = true
 	elif event.is_action_released("run"):
@@ -45,6 +45,8 @@ func _physics_process(delta: float) -> void:
 		return
 	if ai.heuristic == "human":
 		move= Vector3( Input.get_axis("left", "right"),0.0,Input.get_axis("up", "down"))
+		
+		aim = $"../Cursor".position
 	else:
 		move = Vector3(requested_move.x,0.0,requested_move.y)
 	is_running = move.length() > 0.5
@@ -58,6 +60,7 @@ func die():
 	ai.done = true
 	is_dead = true
 	visible = false
+	$"..".reset()
 	print("die")
 func swing():
 	pass

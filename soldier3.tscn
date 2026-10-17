@@ -21,6 +21,7 @@ albedo_color = Color(0.53320026, 0.5408519, 0.494061, 1)
 
 [node name="Soldier" type="CharacterBody3D" unique_id=1328232549]
 collision_layer = 2
+collision_mask = 7
 script = ExtResource("1_cj67r")
 
 [node name="hit" type="Node3D" parent="." unique_id=157257603]
@@ -150,4 +151,4 @@ surface_material_override/0 = SubResource("StandardMaterial3D_ttalx")
 
 [node name="ray" type="RayCast3D" parent="." unique_id=415603301]
 target_position = Vector3(0, 0, -1)
-collision_mask = 2
+collision_mask = 4

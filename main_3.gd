@@ -1,15 +1,19 @@
 extends Node3D
 
 @onready var cam:Camera3D = $Camera3D
+@onready var zombie:PackedScene = load("res://zombie3.tscn")
+@onready var spawn_point:PathFollow3D = $SpawnPath/SpawnPoint
 
 func _ready():
-	await get_tree().create_timer(120.0).timeout
-	reset()
+	spawn()
+	$SpawnTimer.start()
 
 func reset():
 	
 	for s in find_children("Soldier*"):
 		s.respawn()
+	for z in find_children("Zombie*"):
+		z.die()
 
 func _physics_process(delta: float) -> void:
 	$Cursor.position = get_cursor_position()
@@ -30,3 +34,17 @@ func get_cursor_position() -> Vector3:
 		out = result.position
 		#print(collision_object.name)
 	return out
+
+func spawn():
+	var z = zombie.instantiate()
+	spawn_point.progress_ratio = randf()
+	z.position = spawn_point.global_position
+	z.target = $Soldier
+	add_child(z)
+
+func _on_episode_timer_timeout() -> void:
+	reset()
+
+
+func _on_spawn_timer_timeout() -> void:
+	spawn()

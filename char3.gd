@@ -1,7 +1,7 @@
 extends CharacterBody3D
 class_name Char3
 
-var speed_stat = 30.0
+var speed_stat = 3.0
 
 var current_speed:float
 var damage:float = 10.0
@@ -18,7 +18,7 @@ static var attack_reward_factor:float = 1.0
 static var damage_punish_factor:float = 1.0
 
 var is_dead:bool=false
-@onready var ai: AIController3D = $AI
+@onready var ai: AIController3D = find_child("AI")
 func _ready():
 	current_speed = speed_stat
 	current_health = max_health
@@ -29,8 +29,7 @@ func _physics_process(delta: float) -> void:
 	
 	move = move.normalized()
 	var mesh :MeshInstance3D = $Mesh
-	if ai.heuristic == "human":
-		aim = $"../Cursor".position
+	
 	#mesh.look_at(position+move)
 	mesh.look_at(aim)
 	mesh.rotation.x = 0.0
@@ -49,6 +48,9 @@ func attack(target_pos:Vector3):
 	if not can_attack or is_attacking:
 		return
 	print("attack")
+	
+	if $hit:
+		$hit.flash(target_pos)
 	#wait 0.2 sec before attacking
 	is_attacking=true
 	await get_tree().create_timer(attack_startup).timeout
@@ -62,8 +64,9 @@ func attack(target_pos:Vector3):
 		var dmg_info:Dictionary = col.take_damage(damage)
 		var percent_damage :float = dmg_info["percent_damage"]
 		var is_kill:bool = dmg_info["is_kill"]
-		ai.reward += clamp(percent_damage,-1.0,1.0)*attack_reward_factor
-		ai.reward += 10.0 if is_kill else 0.0
+		if ai:
+			ai.reward += clamp(percent_damage,-1.0,1.0)*attack_reward_factor
+			ai.reward += 10.0 if is_kill else 0.0
 		print("hit target")
 	can_attack = false
 	start_attack_cd()
@@ -84,7 +87,8 @@ func take_damage(damage:float) -> Dictionary:
 	var percent_damage:float = damage/current_health
 	current_health = clamp(current_health-damage,0.0,max_health)
 	
-	ai.reward -= clamp(percent_damage,-1.0,1.0)*damage_punish_factor
+	if ai:
+		ai.reward -= clamp(percent_damage,-1.0,1.0)*damage_punish_factor
 	if current_health == 0.0:
 		die()
 		is_kill = true

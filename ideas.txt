@@ -48,6 +48,9 @@ misc ideas:
 	how to give characters look direction
 	how to calculate 2d visibility box and give information to ai
 grok ideas:
+	train commands using one-hot system: array with only 1 in position representing command.
+		modify reward function to reward following current command
+		can blend commands. recommend max two blended commands and might require training blended commands. reward function blends rewards too
 	Rule of thumb: if a human can learn the task in under a minute of watching, and you can write a dense reward, it belongs on your GPU.
 	don't train a commander to order soldiers who are still learning themselves. Only train commanders to order completed soldier neural nets
 	generals need too much time to see the reward. therefore dont use RL or only let human players be generals, or train generals on abstraction
