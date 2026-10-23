@@ -9,11 +9,12 @@ func _ready():
 	$SpawnTimer.start()
 
 func reset():
-	
+	print("reset")
 	for s in find_children("Soldier*"):
 		s.respawn()
-	for z in find_children("Zombie*"):
+	for z in find_children("Zombie*", "", true, false):
 		z.die()
+	$EpisodeTimer.start()
 
 func _physics_process(delta: float) -> void:
 	$Cursor.position = get_cursor_position()
@@ -40,7 +41,8 @@ func spawn():
 	spawn_point.progress_ratio = randf()
 	z.position = spawn_point.global_position
 	z.target = $Soldier
-	add_child(z)
+	z.name = "Zombie"
+	add_child(z,true)
 
 func _on_episode_timer_timeout() -> void:
 	reset()

@@ -7,12 +7,16 @@
 
 [node name="Sync" type="Node" parent="." unique_id=1648796955]
 script = ExtResource("1_fmvva")
+speed_up = 2.0
 metadata/_custom_type_script = "uid://coprvdmwywes7"
 
 [node name="Main3" parent="." unique_id=216114808 instance=ExtResource("2_fmvva")]
 
 [node name="Soldier" parent="Main3" index="5" unique_id=1328232549]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.9262123, 1, 4.267624)
+
+[node name="SpawnPoint" parent="Main3/SpawnPath" parent_id_path=PackedInt32Array(216114808, 1063573395) index="0" unique_id=343208170]
+transform = Transform3D(0.99995846, 0, -0.009100208, 0, 1, 0, 0.009100208, 0, 0.99995846, -22.840332, 0, 22.870026)
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=353608218]
 transform = Transform3D(1, 0, 0, 0, 0.8331758, 0.55300826, 0, -0.55300826, 0.8331758, 0, 13.664315, 23.003225)

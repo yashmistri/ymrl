@@ -28,8 +28,10 @@ func _physics_process(delta: float) -> void:
 	move= Vector3.ZERO
 	if target:
 		move = position.direction_to(target.position).normalized()
+		aim = target.position
 	if position.distance_to(target.position) < 1.1 * attack_range:
-		attack(target.position)
+		attack(aim)
+		print("zombie attack")
 	is_running = move.length() > 0.5
 	var run := (2.0 if is_running else 1.0)
 	var attack_slow := (0.5 if is_attacking else 1.0)
@@ -39,7 +41,7 @@ func _physics_process(delta: float) -> void:
 func die():
 	is_dead = true
 	visible = false
-	#print("die")
+	print("zombie die")
 	queue_free()
 func swing():
 	pass
