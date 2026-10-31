@@ -98,7 +98,7 @@ mesh = SubResource("SphereMesh_hlpfh")
 surface_material_override/0 = SubResource("StandardMaterial3D_6ve0f")
 
 [node name="EpisodeTimer" type="Timer" parent="." unique_id=749716705]
-wait_time = 2.0
+wait_time = 30.0
 one_shot = true
 autostart = true
 
@@ -109,7 +109,7 @@ wait_time = 5.0
 curve = SubResource("Curve3D_5tyq8")
 
 [node name="SpawnPoint" type="PathFollow3D" parent="SpawnPath" unique_id=343208170]
-transform = Transform3D(0.99995846, 0, -0.009100208, 0, 1, 0, 0.009100208, 0, 0.99995846, -22.840332, 0, 22.870026)
+transform = Transform3D(0.99995834, 0, -0.009100207, 0, 1, 0, 0.009100207, 0, 0.99995834, -22.840332, 0, 22.870026)
 
 [node name="HUD" type="CanvasLayer" parent="." unique_id=201775517]
 

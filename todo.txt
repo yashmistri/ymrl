@@ -9,4 +9,5 @@ todo:
 	make one agent vs zombies scenario
 		reset resets agent to center and all zombies killed
 		zombies spawn randomly around arena after delay but not if player steps on spawn point?
-		
+	remove raycasts and replace with 10 slot system. Enemies that enter vision range get put into first open slot, which records relative position, etc. 
+		when enemy dies only that slot becomes open.

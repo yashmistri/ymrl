@@ -1,0 +1,33 @@
+[gd_scene format=3 uid="uid://dr07qfaemmbxc"]
+
+[ext_resource type="Script" uid="uid://dyxy6v2p41dvl" path="res://health_bar_3d.gd" id="1_t64h5"]
+
+[sub_resource type="QuadMesh" id="QuadMesh_0jnqr"]
+size = Vector2(1.24, 0.22)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_pejq7"]
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(0.16862746, 0.047058824, 0.047058824, 1)
+
+[sub_resource type="QuadMesh" id="QuadMesh_sxqey"]
+size = Vector2(1.12, 0.14)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_4rb3v"]
+cull_mode = 2
+shading_mode = 0
+albedo_color = Color(0.2, 0.93333334, 0.26666668, 1)
+
+[node name="HealthBar" type="Node3D" unique_id=573215844]
+script = ExtResource("1_t64h5")
+
+[node name="Background" type="MeshInstance3D" parent="." unique_id=67928935]
+cast_shadow = 0
+mesh = SubResource("QuadMesh_0jnqr")
+surface_material_override/0 = SubResource("StandardMaterial3D_pejq7")
+
+[node name="Fill" type="MeshInstance3D" parent="." unique_id=638225885]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.03)
+cast_shadow = 0
+mesh = SubResource("QuadMesh_sxqey")
+surface_material_override/0 = SubResource("StandardMaterial3D_4rb3v")
