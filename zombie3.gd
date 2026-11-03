@@ -7,7 +7,7 @@ var spawn_pos:Vector3
 var target:Node3D
 func _ready():
 	spawn_pos = global_position
-	attack_range = 0.7
+	attack_range = 5.0
 	speed_stat = 4.0
 	if ai:
 		ai.init(self)
@@ -27,11 +27,10 @@ func _physics_process(delta: float) -> void:
 		return
 	move= Vector3.ZERO
 	if target:
-		move = position.direction_to(target.position).normalized()
-		aim = target.position
+		aim = target.global_position
+		move = Vector3(0.0, 0.0, -1.0)
 	if position.distance_to(target.position) < 1.1 * attack_range:
 		attack(aim)
-		print("zombie attack")
 	is_running = move.length() > 0.5
 	var run := (2.0 if is_running else 1.0)
 	var attack_slow := (0.5 if is_attacking else 1.0)

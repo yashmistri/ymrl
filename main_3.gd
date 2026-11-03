@@ -3,6 +3,7 @@ extends Node3D
 @onready var cam:Camera3D = $Camera3D
 @onready var zombie:PackedScene = load("res://zombie3.tscn")
 @onready var spawn_point:PathFollow3D = $SpawnPath/SpawnPoint
+@export var peaceful:bool=false
 
 func _ready():
 	spawn()
@@ -37,6 +38,8 @@ func get_cursor_position() -> Vector3:
 	return out
 
 func spawn():
+	if peaceful:
+		return
 	var z = zombie.instantiate()
 	spawn_point.progress_ratio = randf()
 	z.position = spawn_point.global_position

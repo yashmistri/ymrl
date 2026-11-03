@@ -12,7 +12,12 @@ func get_obs() -> Dictionary:
 	
 	var charray_obs = $"../CharSensor".get_observation()
 	result.append_array(charray_obs)
-	
+	var aim_offset :Vector3= char.aim - char.global_position
+	var aim2:Vector2=Vector2(aim_offset.x,aim_offset.z).normalized()
+	result.append_array([
+		aim2.x,
+		aim2.y
+		])
 	return {"obs": result}
 	
 
@@ -24,15 +29,23 @@ func get_reward() -> float:
 func get_action_space() -> Dictionary:
 	# Define action space (continuous or discrete)
 	return {
-		"move": {
-			"size": 2,
-			"action_type": "continuous"
+		"move_forward": {
+			"size": 3,
+			"action_type": "discrete"
 		},
-		"aim": {
-			"size": 2,
-			"action_type": "continuous"
+		"move_strafe": {
+			"size": 3,
+			"action_type": "discrete"
+		},
+		"turn": {
+			"size": 3,
+			"action_type": "discrete"
 		},
 		"attack": {
+			"size": 2,
+			"action_type": "discrete"
+		},
+		"sprint": {
 			"size": 2,
 			"action_type": "discrete"
 		}
@@ -41,11 +54,11 @@ func get_action_space() -> Dictionary:
 func set_action(action:Dictionary) -> void:
 	if done:
 		return
-	# Apply the action (e.g., move character based on action values)
-	char.aim = Vector3(action["aim"][0],0.0,action["aim"][1])
-	var reach:=5.0
-	char.aim *= reach
-	char.requested_move = Vector2(action["move"][0],action["move"][1])
+	# discrete goes from 0 to 2 therefore subtract 1
+	char.requested_move = Vector2(action["move_forward"]-1.0,action["move_strafe"]-1.0)
+	char.requested_turn = action["turn"]
+	char.requested_sprint = action["sprint"]
 	if action["attack"] == 1:
 		char.attack(char.aim)
+	
 	pass

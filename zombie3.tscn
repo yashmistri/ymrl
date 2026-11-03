@@ -2,7 +2,6 @@
 
 [ext_resource type="Script" uid="uid://b4cr4tynjmbld" path="res://zombie3.gd" id="1_7kblp"]
 [ext_resource type="Script" uid="uid://b0mvymfdox8t8" path="res://hit.gd" id="2_r63p1"]
-[ext_resource type="PackedScene" uid="uid://cmp313iq0qs0u" path="res://Assets/characters/zombie.glb" id="3_6rm5n"]
 [ext_resource type="PackedScene" uid="uid://dr07qfaemmbxc" path="res://health_bar_3d.tscn" id="3_yepq0"]
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_hlpfh"]
@@ -40,7 +39,6 @@ surface_material_override/0 = SubResource("StandardMaterial3D_7jswi")
 shape = SubResource("CapsuleShape3D_7jswi")
 
 [node name="Mesh" type="MeshInstance3D" parent="." unique_id=1304257598]
-layers = 0
 cast_shadow = 0
 mesh = SubResource("CapsuleMesh_hlpfh")
 surface_material_override/0 = SubResource("StandardMaterial3D_5tyq8")
@@ -51,7 +49,7 @@ visible = false
 mesh = SubResource("CapsuleMesh_7jswi")
 surface_material_override/0 = SubResource("StandardMaterial3D_ttalx")
 
-[node name="Body" parent="Mesh" unique_id=1086321141 instance=ExtResource("3_6rm5n")]
+[node name="Body" parent="Mesh" unique_id=1086321141]
 
 [node name="ray" type="RayCast3D" parent="." unique_id=415603301]
 target_position = Vector3(0, 0, -1)

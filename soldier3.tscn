@@ -5,7 +5,6 @@
 [ext_resource type="Script" uid="uid://c265jjwap0lr" path="res://addons/godot_rl_agents/sensors/sensors_3d/RaycastSensor3D.gd" id="3_lbr5k"]
 [ext_resource type="Script" uid="uid://b0mvymfdox8t8" path="res://hit.gd" id="4_hiq48"]
 [ext_resource type="PackedScene" uid="uid://dr07qfaemmbxc" path="res://health_bar_3d.tscn" id="5_1iif0"]
-[ext_resource type="PackedScene" uid="uid://dg6jsc7n0dgqd" path="res://Assets/characters/soldier.glb" id="5_gn077"]
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_hlpfh"]
 
@@ -144,17 +143,15 @@ metadata/_custom_type_script = "uid://b1q1vbibwr38m"
 shape = SubResource("CapsuleShape3D_7jswi")
 
 [node name="Mesh" type="MeshInstance3D" parent="." unique_id=1304257598]
-layers = 0
 cast_shadow = 0
 mesh = SubResource("CapsuleMesh_hlpfh")
 
 [node name="forward" type="MeshInstance3D" parent="Mesh" unique_id=1783848235]
 transform = Transform3D(0.2503533, 0, 0, 0, -1.6029382e-08, 0.2503533, 0, -0.3667095, -1.0943292e-08, 0, 0.86022353, -0.27007627)
-visible = false
 mesh = SubResource("CapsuleMesh_7jswi")
 surface_material_override/0 = SubResource("StandardMaterial3D_ttalx")
 
-[node name="Body" parent="Mesh" unique_id=1060482941 instance=ExtResource("5_gn077")]
+[node name="Body" parent="Mesh" unique_id=1060482941]
 
 [node name="ray" type="RayCast3D" parent="." unique_id=415603301]
 target_position = Vector3(0, 0, -1)

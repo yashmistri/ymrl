@@ -5,6 +5,10 @@ var max_stamina:float = 100.0
 var current_stamina:float
 
 var requested_move:Vector2
+var requested_turn:float
+var requested_sprint:bool
+@export
+var turn_speed:float = 1.0
 var is_running:bool=false
 var spawn_pos:Vector3
 func _ready():
@@ -44,12 +48,19 @@ func _physics_process(delta: float) -> void:
 	if is_dead:
 		return
 	if ai.heuristic == "human":
-		move= Vector3( Input.get_axis("left", "right"),0.0,Input.get_axis("up", "down"))
 		
-		aim = $"../Cursor".position
+		aim = $"../Cursor".global_position
+		move = Vector3(Input.get_axis("left", "right"), 0.0, Input.get_axis("up", "down"))
 	else:
-		move = Vector3(requested_move.x,0.0,requested_move.y)
-	is_running = move.length() > 0.5
+		# Positive forward walks toward aim. move.z is negative for that, matching W.
+		move = Vector3(requested_move.y, 0.0, -requested_move.x)
+		var aim_offset := aim - global_position
+		aim_offset.y = 0.0
+		if aim_offset.length_squared() < 0.000001:
+			aim_offset = Vector3.FORWARD
+		aim_offset = aim_offset.normalized().rotated(Vector3.UP, requested_turn * turn_speed*delta)
+		aim = global_position + aim_offset
+		is_running = requested_sprint
 	var run := (2.0 if is_running else 1.0)
 	var attack_slow := (0.5 if is_attacking else 1.0)
 	current_speed = speed_stat * run * attack_slow

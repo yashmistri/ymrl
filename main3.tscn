@@ -109,7 +109,7 @@ wait_time = 5.0
 curve = SubResource("Curve3D_5tyq8")
 
 [node name="SpawnPoint" type="PathFollow3D" parent="SpawnPath" unique_id=343208170]
-transform = Transform3D(0.99995834, 0, -0.009100207, 0, 1, 0, 0.009100207, 0, 0.99995834, -22.840332, 0, 22.870026)
+transform = Transform3D(0.9999581, 0, -0.009100204, 0, 1, 0, 0.009100204, 0, 0.9999581, -22.840332, 0, 22.870026)
 
 [node name="HUD" type="CanvasLayer" parent="." unique_id=201775517]
 
