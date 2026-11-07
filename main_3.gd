@@ -4,18 +4,46 @@ extends Node3D
 @onready var zombie:PackedScene = load("res://zombie3.tscn")
 @onready var spawn_point:PathFollow3D = $SpawnPath/SpawnPoint
 @export var peaceful:bool=false
+@export var zombies_per_episode:int = 5
+var zombies_spawned:int = 0
+var zombies_killed:int = 0
 
 func _ready():
 	spawn()
-	$SpawnTimer.start()
+	if zombies_spawned < zombies_per_episode:
+		$SpawnTimer.start()
 
 func reset():
 	print("reset")
+	zombies_spawned = 0
+	zombies_killed = 0
 	for s in find_children("Soldier*"):
-		s.respawn()
+		if s.has_method("respawn"):
+			s.respawn()
 	for z in find_children("Zombie*", "", true, false):
 		z.die()
 	$EpisodeTimer.start()
+	spawn()
+	if zombies_spawned < zombies_per_episode:
+		$SpawnTimer.start()
+	else:
+		$SpawnTimer.stop()
+
+func zombie_killed_by_soldier() -> void:
+	zombies_killed += 1
+	if zombies_spawned < zombies_per_episode:
+		return
+	if _living_zombie_count() > 0:
+		return
+	reset()
+
+func _living_zombie_count() -> int:
+	var count := 0
+	for z in find_children("Zombie*", "", true, false):
+		if z.is_queued_for_deletion() or z.is_dead:
+			continue
+		count += 1
+	return count
 
 func _physics_process(delta: float) -> void:
 	$Cursor.position = get_cursor_position()
@@ -40,12 +68,18 @@ func get_cursor_position() -> Vector3:
 func spawn():
 	if peaceful:
 		return
+	if zombies_spawned >= zombies_per_episode:
+		$SpawnTimer.stop()
+		return
 	var z = zombie.instantiate()
 	spawn_point.progress_ratio = randf()
 	z.position = spawn_point.global_position
 	z.target = $Soldier
 	z.name = "Zombie"
 	add_child(z,true)
+	zombies_spawned += 1
+	if zombies_spawned >= zombies_per_episode:
+		$SpawnTimer.stop()
 
 func _on_episode_timer_timeout() -> void:
 	reset()

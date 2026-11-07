@@ -1,5 +1,7 @@
 extends Char
 
+signal killed_enemy
+signal died
 
 var max_stamina:float = 100.0
 var current_stamina:float
@@ -39,7 +41,10 @@ func _physics_process(delta: float) -> void:
 	current_speed = speed_stat * run * attack_slow
 	super._physics_process(delta)
 
+func _on_enemy_killed() -> void:
+	killed_enemy.emit()
+
 func die():
-	ai.reward -= 100
+	died.emit()
 func swing():
 	pass

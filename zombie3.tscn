@@ -25,6 +25,7 @@ albedo_color = Color(0.53320026, 0.5408519, 0.494061, 1)
 collision_layer = 4
 collision_mask = 7
 script = ExtResource("1_7kblp")
+attack_range = 2.0
 
 [node name="hit" type="Node3D" parent="." unique_id=157257603]
 transform = Transform3D(0.38109845, 0, 0, 0, 0.38109845, 0, 0, 0, 0.38109845, 0, 0, 0)
@@ -48,8 +49,6 @@ transform = Transform3D(0.2503533, 0, 0, 0, -1.6029382e-08, 0.2503533, 0, -0.366
 visible = false
 mesh = SubResource("CapsuleMesh_7jswi")
 surface_material_override/0 = SubResource("StandardMaterial3D_ttalx")
-
-[node name="Body" parent="Mesh" unique_id=1086321141]
 
 [node name="ray" type="RayCast3D" parent="." unique_id=415603301]
 target_position = Vector3(0, 0, -1)

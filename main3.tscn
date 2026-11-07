@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://1cl4dbv1tjtq" path="res://main_3.gd" id="1_r6fop"]
 [ext_resource type="PackedScene" uid="uid://cfsuoi7x0ea4x" path="res://soldier3.tscn" id="2_5tyq8"]
 [ext_resource type="Script" uid="uid://dpurbomfq1bs3" path="res://episode_elapsed.gd" id="3_r6fop"]
+[ext_resource type="Script" uid="uid://c3hq1pdcpasrh" path="res://soldier_hud.gd" id="4_ow45r"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_hlpfh"]
 size = Vector3(50, 1, 50)
@@ -109,7 +110,7 @@ wait_time = 5.0
 curve = SubResource("Curve3D_5tyq8")
 
 [node name="SpawnPoint" type="PathFollow3D" parent="SpawnPath" unique_id=343208170]
-transform = Transform3D(0.9999581, 0, -0.009100204, 0, 1, 0, 0.009100204, 0, 0.9999581, -22.840332, 0, 22.870026)
+transform = Transform3D(0.99995804, 0, -0.009100204, 0, 1, 0, 0.009100204, 0, 0.99995804, -22.840332, 0, 22.870026)
 
 [node name="HUD" type="CanvasLayer" parent="." unique_id=201775517]
 
@@ -124,6 +125,96 @@ theme_override_constants/outline_size = 6
 theme_override_font_sizes/font_size = 28
 text = "0:00.0"
 script = ExtResource("3_r6fop")
+
+[node name="PlayerStats" type="MarginContainer" parent="HUD" unique_id=562696184]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = -94.0
+offset_right = 388.0
+offset_bottom = -20.0
+mouse_filter = 2
+script = ExtResource("4_ow45r")
+
+[node name="Panel" type="PanelContainer" parent="HUD/PlayerStats" unique_id=452687616]
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Rows" type="VBoxContainer" parent="HUD/PlayerStats/Panel" unique_id=416783999]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 8
+
+[node name="HealthRow" type="HBoxContainer" parent="HUD/PlayerStats/Panel/Rows" unique_id=917398626]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="HealthLabel" type="Label" parent="HUD/PlayerStats/Panel/Rows/HealthRow" unique_id=1736631488]
+custom_minimum_size = Vector2(36, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.55, 0.48, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 16
+text = "HP"
+vertical_alignment = 1
+
+[node name="HealthBar" type="ProgressBar" parent="HUD/PlayerStats/Panel/Rows/HealthRow" unique_id=1333019052]
+custom_minimum_size = Vector2(200, 16)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+mouse_filter = 2
+value = 100.0
+show_percentage = false
+
+[node name="HealthValue" type="Label" parent="HUD/PlayerStats/Panel/Rows/HealthRow" unique_id=1612369819]
+custom_minimum_size = Vector2(88, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 16
+text = "100 / 100"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="StaminaRow" type="HBoxContainer" parent="HUD/PlayerStats/Panel/Rows" unique_id=938644799]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="StaminaLabel" type="Label" parent="HUD/PlayerStats/Panel/Rows/StaminaRow" unique_id=936804309]
+custom_minimum_size = Vector2(36, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.86, 0.42, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 16
+text = "STA"
+vertical_alignment = 1
+
+[node name="StaminaBar" type="ProgressBar" parent="HUD/PlayerStats/Panel/Rows/StaminaRow" unique_id=102078279]
+custom_minimum_size = Vector2(200, 16)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+mouse_filter = 2
+value = 100.0
+show_percentage = false
+
+[node name="StaminaValue" type="Label" parent="HUD/PlayerStats/Panel/Rows/StaminaRow" unique_id=719046680]
+custom_minimum_size = Vector2(88, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 16
+text = "100 / 100"
+horizontal_alignment = 2
+vertical_alignment = 1
 
 [connection signal="timeout" from="EpisodeTimer" to="." method="_on_episode_timer_timeout"]
 [connection signal="timeout" from="SpawnTimer" to="." method="_on_spawn_timer_timeout"]

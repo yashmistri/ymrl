@@ -52,9 +52,12 @@ func attack(target_pos:Vector2)-> bool:
 		print("hit target")
 	can_attack = false
 	start_attack_cd()
-	if is_kill and ai:
-		ai.reward += 1.0
+	if is_kill:
+		_on_enemy_killed()
 	return is_kill
+
+func _on_enemy_killed() -> void:
+	pass
 
 func start_attack_cd():
 	await get_tree().create_timer(attack_cd).timeout

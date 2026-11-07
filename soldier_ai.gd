@@ -1,7 +1,21 @@
 extends AIController2D
 
+const KILL_REWARD: float = 1.0
+const DEATH_PENALTY: float = 100.0
+
 @onready var player:CharacterBody2D=$".."
 var target:Node2D
+
+func _ready() -> void:
+	super._ready()
+	player.connect("killed_enemy", _on_killed_enemy)
+	player.connect("died", _on_died)
+
+func _on_killed_enemy() -> void:
+	reward += KILL_REWARD
+
+func _on_died() -> void:
+	reward -= DEATH_PENALTY
 
 var target_rel 
 func get_obs() -> Dictionary:
