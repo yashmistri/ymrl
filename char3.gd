@@ -1,10 +1,11 @@
 extends CharacterBody3D
 class_name Char3
 
-var speed_stat = 3.0
+@export var speed_stat = 3.0
 
+const STRAFE_SPEED:float = 0.75
 var current_speed:float
-var damage:float = 10.0
+@export var damage:float = 10.0
 var max_health:float = 100.0
 var current_health:float
 var move:Vector3
@@ -17,6 +18,27 @@ var aim:Vector3=Vector3.FORWARD
 
 var is_dead:bool=false
 @onready var ai: AIController3D = find_child("AI")
+
+# Combat logging is rate limited: a training run at 10x speedup fires hundreds
+# of attacks per second, and an unthrottled print() floods the console and can
+# dominate frame time. Set debug_logging = true on the node to see every event.
+@export var debug_logging: bool = false
+const DEBUG_LOG_INTERVAL_MSEC: int = 1000
+var _debug_log_last_msec: Dictionary = {}
+
+# Prints at most once per DEBUG_LOG_INTERVAL_MSEC per `tag`. With
+# debug_logging on, every call prints.
+func debug_log(tag: String, message: String) -> void:
+	if debug_logging:
+		print(message)
+		return
+	var now := Time.get_ticks_msec()
+	var last: int = _debug_log_last_msec.get(tag, -DEBUG_LOG_INTERVAL_MSEC)
+	if now - last < DEBUG_LOG_INTERVAL_MSEC:
+		return
+	_debug_log_last_msec[tag] = now
+	print(message)
+
 func _ready():
 	current_speed = speed_stat
 	current_health = max_health
@@ -25,7 +47,7 @@ func _physics_process(delta: float) -> void:
 	if is_dead:
 		return
 	
-	move = move.normalized()
+	#move = move.normalized()
 	var mesh: MeshInstance3D = $Mesh
 
 	# aim is a global point (cursor hit, target.global_position).
@@ -47,7 +69,10 @@ func _physics_process(delta: float) -> void:
 		# Facing -Z, right is +X: forward (0, 0, -1) -> right (1, 0, 0).
 		var right := Vector3(-forward.z, 0.0, forward.x)
 		# move.x: strafe, + is right. move.z: W is -1 (toward aim), S is +1.
-		velocity = (right * move.x - forward * move.z) * current_speed
+		# strafing 0.75 and backpedaling 0.5 of speed
+		if move.z > 0.0:
+			move.z *= 0.5
+		velocity = (right * move.x * STRAFE_SPEED - forward * move.z) * current_speed
 	else:
 		velocity = Vector3.ZERO
 
@@ -59,7 +84,7 @@ func _physics_process(delta: float) -> void:
 func attack():
 	if not can_attack or is_attacking:
 		return
-	print("{0} attack".format([name]))
+	debug_log("attack", "{0} attack".format([name]))
 
 	if $hit:
 		$hit.flash(aim)
@@ -85,7 +110,7 @@ func attack():
 			var percent_damage: float = dmg_info["percent_damage"]
 			var is_kill: bool = dmg_info["is_kill"]
 			_on_attack_landed(percent_damage, is_kill)
-			print("hit target")
+			debug_log("hit", "{0} hit target".format([name]))
 	can_attack = false
 	start_attack_cd()
 	return
@@ -116,6 +141,6 @@ func _on_damage_taken(_percent_damage: float) -> void:
 	pass
 
 func die():
-	print("die")
+	debug_log("die", "{0} die".format([name]))
 	is_dead=true
 	queue_free()

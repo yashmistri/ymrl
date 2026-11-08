@@ -126,7 +126,7 @@ parser.add_argument(
     help="The minibatch size (default 64). The rollout size = n_steps × n_envs must be divisible by batch_size without remainder",
 )
 parser.add_argument(
-    "--ent_coef", default=0.0001, type=float, help="The entropy coefficient for the loss calculation (default 0.0001)"
+    "--ent_coef", default=0.01, type=float, help="The entropy coefficient for the loss calculation (default 0.01)"
 )
 parser.add_argument(
     "--clip_range",
@@ -238,10 +238,16 @@ if args.resume_model_path is None:
     "MultiInputPolicy",
     env,
     device="cuda",          # or "auto"
+    # 0.0001 was far too low: entropy collapsed from ~5.4 nats (near-uniform
+    # over 216 actions) to ~0.9 within 25k steps, locking the policy into a
+    # circling local optimum before it found the zombie.
     ent_coef=args.ent_coef,
     verbose=2,
     n_steps=args.n_steps,
     n_epochs=20,
+    # Kill reward arrives at the end of a long approach. At gamma=0.99 with
+    # action_repeat=8 that signal was discounted into noise.
+    gamma=0.995,
     tensorboard_log=args.experiment_dir,
     learning_rate=learning_rate,
     batch_size=256,

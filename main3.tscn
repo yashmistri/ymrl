@@ -86,7 +86,7 @@ shape = SubResource("BoxShape3D_hlpfh")
 [node name="Soldier" parent="." unique_id=1328232549 instance=ExtResource("2_5tyq8")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=962738175]
+[node name="Light" type="DirectionalLight3D" parent="." unique_id=962738175]
 transform = Transform3D(1, 0, 0, 0, 0.7071068, 0.7071068, 0, -0.7071068, 0.7071068, 0, 9, 0)
 shadow_enabled = true
 
@@ -110,7 +110,7 @@ wait_time = 5.0
 curve = SubResource("Curve3D_5tyq8")
 
 [node name="SpawnPoint" type="PathFollow3D" parent="SpawnPath" unique_id=343208170]
-transform = Transform3D(0.99995804, 0, -0.009100204, 0, 1, 0, 0.009100204, 0, 0.99995804, -22.840332, 0, 22.870026)
+transform = Transform3D(0.9999574, 0, -0.009100198, 0, 1, 0, 0.009100198, 0, 0.9999574, -22.840332, 0, 22.870026)
 
 [node name="HUD" type="CanvasLayer" parent="." unique_id=201775517]
 

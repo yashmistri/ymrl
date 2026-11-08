@@ -5,17 +5,20 @@ signal died
 signal hit_enemy(percent_damage: float)
 signal killed_enemy
 signal blocked_attack(percent_blocked: float)
+# Emitted on the first physics frame an attack starts / block is held.
+signal attack_started
+signal block_started
 
-const ATTACK_STAMINA_COST:float = 20.0
-const SPRINT_STAMINA_PER_SEC:float = 10.0
-const BLOCKED_HIT_STAMINA:float = 10.0
-const STAMINA_REGEN_PER_SEC:float = 10.0
-const STAMINA_REGEN_DELAY:float = 2.0
+const ATTACK_STAMINA_COST:float = 10.0
+const SPRINT_STAMINA_PER_SEC:float = 5.0
+const BLOCKED_HIT_STAMINA:float = 5.0
+const STAMINA_REGEN_PER_SEC:float = 15.0
+const STAMINA_REGEN_DELAY:float = 1.0
 # Attacks from inside this frontal arc are halved while blocking.
 const BLOCK_ARC_DEGREES:float = 120.0
-const BLOCK_SPEED_SCALE:float = 0.5
-
-var max_stamina:float = 100.0
+const BLOCK_SPEED_SCALE:float = 0.7
+const SPRINT_SPEED:float = 1.5
+var max_stamina:float = 150.0
 var current_stamina:float
 
 var requested_move:Vector2
@@ -34,7 +37,6 @@ func _ready():
 	spawn_pos = global_position
 	attack_range = 1.0
 	current_stamina = max_stamina
-	speed_stat=5.0
 	if ai:
 		ai.init(self)
 	$hit.visible = false
@@ -47,7 +49,10 @@ func respawn():
 	current_stamina = max_stamina
 	_time_since_stamina_use = STAMINA_REGEN_DELAY
 	is_dead = false
-	ai.done=false
+	# `done` is deliberately NOT cleared here. The arena sets it when an episode
+	# ends and the Sync node clears it via set_done_false() after reporting the
+	# episode to SB3. Clearing it during respawn would make the episode
+	# invisible to VecMonitor.
 	visible = true
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -77,6 +82,11 @@ func attack():
 func _physics_process(delta: float) -> void:
 	if is_dead:
 		return
+	# Edge detection for the per-action cost signals below. Both flags are
+	# assigned every frame (human input or requested action), so comparing
+	# against the previous frame's value gives exactly one emit per action.
+	var was_blocking := is_blocking
+	var was_attacking := is_attacking
 	if ai.heuristic == "human":
 		
 		aim = $"../Cursor".global_position
@@ -84,6 +94,7 @@ func _physics_process(delta: float) -> void:
 	else:
 		# Positive forward walks toward aim. move.z is negative for that, matching W.
 		move = Vector3(requested_move.y, 0.0, -requested_move.x)
+		
 		var aim_offset := aim - global_position
 		aim_offset.y = 0.0
 		if aim_offset.length_squared() < 0.000001:
@@ -93,11 +104,15 @@ func _physics_process(delta: float) -> void:
 		is_running = requested_sprint
 		is_blocking = requested_block
 	var sprinting := _apply_stamina(delta)
-	var run := (2.0 if sprinting else 1.0)
+	var run := (SPRINT_SPEED if sprinting else 1.0)
 	var attack_slow := (0.5 if is_attacking else 1.0)
 	var block_slow := (BLOCK_SPEED_SCALE if is_blocking else 1.0)
 	current_speed = speed_stat * run * attack_slow * block_slow
 	_shield.visible = is_blocking
+	if is_blocking and not was_blocking:
+		block_started.emit()
+	if is_attacking and not was_attacking:
+		attack_started.emit()
 	super._physics_process(delta)
 
 func take_damage(damage:float, attacker: Node3D = null) -> Dictionary:
@@ -120,12 +135,12 @@ func _on_damage_taken(percent_damage: float) -> void:
 	got_hit.emit(percent_damage)
 
 func die():
-	died.emit()
 	ai.done = true
 	is_dead = true
 	visible = false
-	$"..".reset()
-	print("die")
+	debug_log("die", "{0} die".format([name]))
+	# The arena owns episode resets; listen for `died` instead of resetting here.
+	died.emit()
 func swing():
 	pass
 

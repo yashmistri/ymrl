@@ -35,106 +35,82 @@ transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 1
 mesh = SubResource("CylinderMesh_hlpfh")
 surface_material_override/0 = SubResource("StandardMaterial3D_7jswi")
 
-[node name="WallSensor" type="Node3D" parent="." unique_id=1399702301]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0, 0)
-script = ExtResource("3_lbr5k")
-n_rays_width = 8.0
-n_rays_height = 1.0
-ray_length = 20.0
-cone_width = 360.0
-metadata/_custom_type_script = "uid://c265jjwap0lr"
-
-[node name="node_0_0 0_1" type="RayCast3D" parent="WallSensor" unique_id=46051833]
-enabled = false
-target_position = Vector3(-7.653669, 0, -18.47759)
-
-[node name="node_1_0 0_1" type="RayCast3D" parent="WallSensor" unique_id=1263296504]
-enabled = false
-target_position = Vector3(-18.47759, 0, -7.653669)
-
-[node name="node_2_0 0_1" type="RayCast3D" parent="WallSensor" unique_id=1141905931]
-enabled = false
-target_position = Vector3(-18.47759, 0, 7.653669)
-
-[node name="node_3_0 0_1" type="RayCast3D" parent="WallSensor" unique_id=241621027]
-enabled = false
-target_position = Vector3(-7.653669, 0, 18.47759)
-
-[node name="node_4_0 0_1" type="RayCast3D" parent="WallSensor" unique_id=1126359147]
-enabled = false
-target_position = Vector3(7.653669, 0, 18.47759)
-
-[node name="node_5_0 0_1" type="RayCast3D" parent="WallSensor" unique_id=554448108]
-enabled = false
-target_position = Vector3(18.47759, 0, 7.653669)
-
-[node name="node_6_0 0_1" type="RayCast3D" parent="WallSensor" unique_id=203611251]
-enabled = false
-target_position = Vector3(18.47759, 0, -7.653669)
-
-[node name="node_7_0 0_0" type="RayCast3D" parent="WallSensor" unique_id=1859743648]
-enabled = false
-target_position = Vector3(7.653669, 0, -18.47759)
-
 [node name="CharSensor" type="Node3D" parent="." unique_id=688374579]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0, 0)
 script = ExtResource("3_lbr5k")
+collision_mask = 5
+boolean_class_mask = 4
 n_rays_width = 13.0
 n_rays_height = 1.0
-cone_width = 180.0
+ray_length = 30.0
+cone_width = 300.0
+class_sensor = true
 metadata/_custom_type_script = "uid://c265jjwap0lr"
 
-[node name="node_0_0 0_1" type="RayCast3D" parent="CharSensor" unique_id=1302672479]
+[node name="node_0_0 0_1" type="RayCast3D" parent="CharSensor" unique_id=986453763]
 enabled = false
-target_position = Vector3(-9.927089, 0, 1.2053668)
+target_position = Vector3(-6.6312265, 0, -7.4851074)
+collision_mask = 5
 
-[node name="node_1_0 0_1" type="RayCast3D" parent="CharSensor" unique_id=134539766]
+[node name="node_1_0 0_1" type="RayCast3D" parent="CharSensor" unique_id=200349957]
+enabled = false
+target_position = Vector3(-9.034504, 0, -4.286926)
+collision_mask = 5
+
+[node name="node_2_0 0_1" type="RayCast3D" parent="CharSensor" unique_id=1231003177]
+enabled = false
+target_position = Vector3(-9.99189, 0, -0.4026594)
+collision_mask = 5
+
+[node name="node_3_0 0_1" type="RayCast3D" parent="CharSensor" unique_id=1958828907]
 enabled = false
 target_position = Vector3(-9.3501625, 0, 3.5460489)
+collision_mask = 5
 
-[node name="node_2_0 0_1" type="RayCast3D" parent="CharSensor" unique_id=1046567449]
+[node name="node_4_0 0_1" type="RayCast3D" parent="CharSensor" unique_id=1200869469]
 enabled = false
-target_position = Vector3(-8.229838, 0, 5.6806474)
+target_position = Vector3(-7.2120247, 0, 6.9272437)
+collision_mask = 5
 
-[node name="node_3_0 0_1" type="RayCast3D" parent="CharSensor" unique_id=1733744632]
+[node name="node_5_0 0_1" type="RayCast3D" parent="CharSensor" unique_id=2037993530]
 enabled = false
-target_position = Vector3(-6.6312265, 0, 7.4851074)
+target_position = Vector3(-3.919666, 0, 9.199795)
+collision_mask = 5
 
-[node name="node_4_0 0_1" type="RayCast3D" parent="CharSensor" unique_id=245162435]
-enabled = false
-target_position = Vector3(-4.6472316, 0, 8.85456)
-
-[node name="node_5_0 0_1" type="RayCast3D" parent="CharSensor" unique_id=232327427]
-enabled = false
-target_position = Vector3(-2.3931565, 0, 9.709418)
-
-[node name="node_6_0 0_1" type="RayCast3D" parent="CharSensor" unique_id=1008149869]
+[node name="node_6_0 0_1" type="RayCast3D" parent="CharSensor" unique_id=133362973]
 enabled = false
 target_position = Vector3(0, 0, 10)
+collision_mask = 5
 
-[node name="node_7_0 0_0" type="RayCast3D" parent="CharSensor" unique_id=1997367572]
+[node name="node_7_0 0_0" type="RayCast3D" parent="CharSensor" unique_id=937908239]
 enabled = false
-target_position = Vector3(2.3931565, 0, 9.709418)
+target_position = Vector3(3.919666, 0, 9.199795)
+collision_mask = 5
 
-[node name="node_8_0 0_1" type="RayCast3D" parent="CharSensor" unique_id=132159132]
+[node name="node_8_0 0_1" type="RayCast3D" parent="CharSensor" unique_id=1104594598]
 enabled = false
-target_position = Vector3(4.6472316, 0, 8.85456)
+target_position = Vector3(7.2120247, 0, 6.9272437)
+collision_mask = 5
 
-[node name="node_9_0 0_0" type="RayCast3D" parent="CharSensor" unique_id=675335672]
-enabled = false
-target_position = Vector3(6.6312265, 0, 7.4851074)
-
-[node name="node_10_0 0_0" type="RayCast3D" parent="CharSensor" unique_id=536261150]
-enabled = false
-target_position = Vector3(8.229838, 0, 5.6806474)
-
-[node name="node_11_0 0_1" type="RayCast3D" parent="CharSensor" unique_id=1869129340]
+[node name="node_9_0 0_0" type="RayCast3D" parent="CharSensor" unique_id=1501148417]
 enabled = false
 target_position = Vector3(9.3501625, 0, 3.5460489)
+collision_mask = 5
 
-[node name="node_12_0 0_1" type="RayCast3D" parent="CharSensor" unique_id=498201070]
+[node name="node_10_0 0_0" type="RayCast3D" parent="CharSensor" unique_id=1518118375]
 enabled = false
-target_position = Vector3(9.927089, 0, 1.2053668)
+target_position = Vector3(9.99189, 0, -0.4026594)
+collision_mask = 5
+
+[node name="node_11_0 0_1" type="RayCast3D" parent="CharSensor" unique_id=2038583724]
+enabled = false
+target_position = Vector3(9.034504, 0, -4.286926)
+collision_mask = 5
+
+[node name="node_12_0 0_1" type="RayCast3D" parent="CharSensor" unique_id=1434332345]
+enabled = false
+target_position = Vector3(6.6312265, 0, -7.4851074)
+collision_mask = 5
 
 [node name="AI" type="Node3D" parent="." unique_id=50549052]
 script = ExtResource("2_lbr5k")

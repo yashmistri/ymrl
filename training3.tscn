@@ -1,9 +1,11 @@
 [gd_scene format=3 uid="uid://bjv033srxi3qm"]
 
+[ext_resource type="Script" uid="uid://cto7113o3bvf4" path="res://training.gd" id="1_1g2ay"]
 [ext_resource type="Script" uid="uid://coprvdmwywes7" path="res://addons/godot_rl_agents/sync.gd" id="2_1g2ay"]
 [ext_resource type="PackedScene" uid="uid://b4sd25hgd6cy" path="res://main3.tscn" id="2_2yiqy"]
 
 [node name="Training" type="Node" unique_id=1221673137]
+script = ExtResource("1_1g2ay")
 
 [node name="Sync" type="Node" parent="." unique_id=1648796955]
 script = ExtResource("2_1g2ay")
@@ -11,10 +13,10 @@ speed_up = 10.0
 metadata/_custom_type_script = "uid://coprvdmwywes7"
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=353608218]
-transform = Transform3D(1, 0, 0, 0, 0.8331758, 0.55300826, 0, -0.55300826, 0.8331758, 0, 13.664315, 23.003225)
+transform = Transform3D(1, 0, 0, 0, 0.8331758, 0.55300826, 0, -0.55300826, 0.8331758, -33.87053, 33.09023, 23.003225)
 projection = 1
 current = true
-size = 34.812
+size = 76.226
 
 [node name="Main3" parent="." unique_id=216114808 instance=ExtResource("2_2yiqy")]
 
