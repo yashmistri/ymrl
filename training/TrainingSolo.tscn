@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://chssaiuc3y0ll"]
 
 [ext_resource type="Script" uid="uid://coprvdmwywes7" path="res://addons/godot_rl_agents/sync.gd" id="1_gx3pq"]
-[ext_resource type="PackedScene" uid="uid://boyxo5mwdp3ys" path="res://swarm_training_main.tscn" id="2_gx3pq"]
+[ext_resource type="PackedScene" uid="uid://boyxo5mwdp3ys" path="res://training/swarm_training_main.tscn" id="2_gx3pq"]
 
 [node name="TrainingSolo" type="Node" unique_id=1221673137]
 

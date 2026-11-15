@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://boyxo5mwdp3ys"]
 
-[ext_resource type="Script" uid="uid://brk8ybjdbgeuq" path="res://swarm_main.gd" id="1_ddbwl"]
-[ext_resource type="PackedScene" uid="uid://cbqvpr1if15rn" path="res://soldier.tscn" id="2_2a5ws"]
-[ext_resource type="PackedScene" uid="uid://ds7olhulo7qjt" path="res://creature.tscn" id="3_ach40"]
+[ext_resource type="Script" uid="uid://brk8ybjdbgeuq" path="res://scenes/2d/swarm_main.gd" id="1_ddbwl"]
+[ext_resource type="PackedScene" uid="uid://cbqvpr1if15rn" path="res://characters/soldier/soldier.tscn" id="2_2a5ws"]
+[ext_resource type="PackedScene" uid="uid://ds7olhulo7qjt" path="res://characters/creature/creature.tscn" id="3_ach40"]
 
 [node name="SwarmTraining" type="Node2D" unique_id=239850656]
 script = ExtResource("1_ddbwl")

@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://b4sd25hgd6cy"]
 
-[ext_resource type="Script" uid="uid://1cl4dbv1tjtq" path="res://main_3.gd" id="1_r6fop"]
-[ext_resource type="PackedScene" uid="uid://cfsuoi7x0ea4x" path="res://soldier3.tscn" id="2_5tyq8"]
-[ext_resource type="Script" uid="uid://dpurbomfq1bs3" path="res://episode_elapsed.gd" id="3_r6fop"]
-[ext_resource type="Script" uid="uid://c3hq1pdcpasrh" path="res://soldier_hud.gd" id="4_ow45r"]
+[ext_resource type="Script" uid="uid://1cl4dbv1tjtq" path="res://scenes/3d/main_3.gd" id="1_r6fop"]
+[ext_resource type="PackedScene" uid="uid://cfsuoi7x0ea4x" path="res://characters/soldier3/soldier3.tscn" id="2_5tyq8"]
+[ext_resource type="Script" uid="uid://dpurbomfq1bs3" path="res://ui/episode_elapsed.gd" id="3_r6fop"]
+[ext_resource type="Script" uid="uid://c3hq1pdcpasrh" path="res://ui/soldier_hud.gd" id="4_ow45r"]
 
 [sub_resource type="BoxMesh" id="BoxMesh_hlpfh"]
 size = Vector3(50, 1, 50)

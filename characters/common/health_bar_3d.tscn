@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://dr07qfaemmbxc"]
 
-[ext_resource type="Script" uid="uid://dyxy6v2p41dvl" path="res://health_bar_3d.gd" id="1_t64h5"]
+[ext_resource type="Script" uid="uid://dyxy6v2p41dvl" path="res://characters/common/health_bar_3d.gd" id="1_t64h5"]
 
 [sub_resource type="QuadMesh" id="QuadMesh_0jnqr"]
 size = Vector2(1.24, 0.22)

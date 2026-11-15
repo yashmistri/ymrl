@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://bjv033srxi3qm"]
 
-[ext_resource type="Script" uid="uid://cto7113o3bvf4" path="res://training.gd" id="1_1g2ay"]
+[ext_resource type="Script" uid="uid://cto7113o3bvf4" path="res://training/training.gd" id="1_1g2ay"]
 [ext_resource type="Script" uid="uid://coprvdmwywes7" path="res://addons/godot_rl_agents/sync.gd" id="2_1g2ay"]
-[ext_resource type="PackedScene" uid="uid://b4sd25hgd6cy" path="res://main3.tscn" id="2_2yiqy"]
+[ext_resource type="PackedScene" uid="uid://b4sd25hgd6cy" path="res://scenes/3d/main3.tscn" id="2_2yiqy"]
 
 [node name="Training" type="Node" unique_id=1221673137]
 script = ExtResource("1_1g2ay")

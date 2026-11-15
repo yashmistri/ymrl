@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://cu1kxr3omgvh5"]
 
-[ext_resource type="Script" uid="uid://cp41v7s1d7juy" path="res://soldier.gd" id="1_dhb2b"]
-[ext_resource type="Script" uid="uid://pcfrm2jrk4kp" path="res://ai.gd" id="2_8l2ru"]
+[ext_resource type="Script" uid="uid://cp41v7s1d7juy" path="res://characters/soldier/soldier.gd" id="1_dhb2b"]
+[ext_resource type="Script" uid="uid://pcfrm2jrk4kp" path="res://characters/agent/ai.gd" id="2_8l2ru"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_hlpfh"]
 radius = 6.0827627

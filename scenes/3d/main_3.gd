@@ -1,7 +1,7 @@
 extends Node3D
 
 @onready var cam:Camera3D = $Camera3D
-@onready var zombie:PackedScene = load("res://zombie3.tscn")
+@onready var zombie:PackedScene = load("res://characters/zombie3/zombie3.tscn")
 @onready var spawn_point:PathFollow3D = $SpawnPath/SpawnPoint
 @export var peaceful:bool=false
 @export var zombies_per_episode:int = 5

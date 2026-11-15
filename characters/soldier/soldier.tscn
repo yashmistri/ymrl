@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://cbqvpr1if15rn"]
 
-[ext_resource type="Script" uid="uid://cp41v7s1d7juy" path="res://soldier.gd" id="1_ba3fx"]
-[ext_resource type="Script" uid="uid://dy26xgfntqj1a" path="res://soldier_ai.gd" id="2_i6re7"]
+[ext_resource type="Script" uid="uid://cp41v7s1d7juy" path="res://characters/soldier/soldier.gd" id="1_ba3fx"]
+[ext_resource type="Script" uid="uid://dy26xgfntqj1a" path="res://characters/soldier/soldier_ai.gd" id="2_i6re7"]
 [ext_resource type="Texture2D" uid="uid://b5am4vctikk0y" path="res://Assets/kenney_roguelike-characters/Spritesheet/roguelikeChar_transparent.png" id="3_8swxs"]
 [ext_resource type="Script" uid="uid://dhwvkwy5hyw88" path="res://addons/godot_rl_agents/sensors/sensors_2d/RaycastSensor2D.gd" id="3_i6re7"]
 

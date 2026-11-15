@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://dtbmrv74bvdla"]
 
-[ext_resource type="Script" uid="uid://b4cr4tynjmbld" path="res://zombie3.gd" id="1_7kblp"]
-[ext_resource type="Script" uid="uid://b0mvymfdox8t8" path="res://hit.gd" id="2_r63p1"]
-[ext_resource type="PackedScene" uid="uid://dr07qfaemmbxc" path="res://health_bar_3d.tscn" id="3_yepq0"]
+[ext_resource type="Script" uid="uid://b4cr4tynjmbld" path="res://characters/zombie3/zombie3.gd" id="1_7kblp"]
+[ext_resource type="Script" uid="uid://b0mvymfdox8t8" path="res://characters/common/hit.gd" id="2_r63p1"]
+[ext_resource type="PackedScene" uid="uid://dr07qfaemmbxc" path="res://characters/common/health_bar_3d.tscn" id="3_yepq0"]
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_hlpfh"]
 

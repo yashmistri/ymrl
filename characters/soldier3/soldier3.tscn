@@ -1,10 +1,10 @@
 [gd_scene format=3 uid="uid://cfsuoi7x0ea4x"]
 
-[ext_resource type="Script" uid="uid://b6i2fwwbr2p83" path="res://soldier3.gd" id="1_cj67r"]
-[ext_resource type="Script" uid="uid://derma1b673fbr" path="res://soldier3_ai.gd" id="2_lbr5k"]
+[ext_resource type="Script" uid="uid://b6i2fwwbr2p83" path="res://characters/soldier3/soldier3.gd" id="1_cj67r"]
+[ext_resource type="Script" uid="uid://derma1b673fbr" path="res://characters/soldier3/soldier3_ai.gd" id="2_lbr5k"]
 [ext_resource type="Script" uid="uid://c265jjwap0lr" path="res://addons/godot_rl_agents/sensors/sensors_3d/RaycastSensor3D.gd" id="3_lbr5k"]
-[ext_resource type="Script" uid="uid://b0mvymfdox8t8" path="res://hit.gd" id="4_hiq48"]
-[ext_resource type="PackedScene" uid="uid://dr07qfaemmbxc" path="res://health_bar_3d.tscn" id="5_1iif0"]
+[ext_resource type="Script" uid="uid://b0mvymfdox8t8" path="res://characters/common/hit.gd" id="4_hiq48"]
+[ext_resource type="PackedScene" uid="uid://dr07qfaemmbxc" path="res://characters/common/health_bar_3d.tscn" id="5_1iif0"]
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_hlpfh"]
 

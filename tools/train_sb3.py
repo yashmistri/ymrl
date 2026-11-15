@@ -121,9 +121,16 @@ parser.add_argument(
 )
 parser.add_argument(
     "--batch_size",
-    default=64,
+    default=None,
     type=int,
-    help="The minibatch size (default 64). The rollout size = n_steps × n_envs must be divisible by batch_size without remainder",
+    help="The minibatch size. Defaults to the full rollout (n_steps × n_envs). "
+    "The rollout size = n_steps × n_envs must be divisible by batch_size without remainder.",
+)
+parser.add_argument(
+    "--device",
+    default="auto",
+    type=str,
+    help="Torch device for the policy ('auto', 'cpu', 'cuda', 'cuda:0'). 'auto' picks CUDA when available.",
 )
 parser.add_argument(
     "--ent_coef", default=0.01, type=float, help="The entropy coefficient for the loss calculation (default 0.01)"
@@ -136,6 +143,27 @@ parser.add_argument(
 )
 
 args, extras = parser.parse_known_args()
+
+
+def resolve_batch_size(n_steps: int, n_envs: int, requested: int | None) -> int:
+    """Pick a batch size that divides the rollout exactly.
+
+    PPO splits each rollout (n_steps x n_envs) into minibatches, so the batch
+    size must divide it. The previous hardcoded 256 did not divide the default
+    64-step single-env rollout and silently ignored --batch_size.
+    """
+    rollout_size = n_steps * n_envs
+    if requested is None:
+        return rollout_size
+    if requested <= 0:
+        raise parser.error(f"--batch_size must be positive, got {requested}")
+    if rollout_size % requested != 0:
+        raise parser.error(
+            f"--batch_size {requested} does not divide the rollout size "
+            f"n_steps x n_envs = {n_steps} x {n_envs} = {rollout_size}. "
+            f"Pick a divisor of {rollout_size}, or omit --batch_size to use the full rollout."
+        )
+    return requested
 
 
 def handle_onnx_export():
@@ -222,42 +250,46 @@ def linear_schedule(initial_value: float) -> Callable[[float], float]:
 
 if args.resume_model_path is None:
     learning_rate = args.learning_rate if not args.linear_lr_schedule else linear_schedule(args.learning_rate)
+    batch_size = resolve_batch_size(args.n_steps, env.num_envs, args.batch_size)
 
-    """ model: PPO = PPO(
+    model: PPO = PPO(
         "MultiInputPolicy",
         env,
+        device=args.device,
+        # 0.0001 was far too low: entropy collapsed from ~5.4 nats (near-uniform
+        # over 216 actions) to ~0.9 within 25k steps, locking the policy into a
+        # circling local optimum before it found the zombie.
         ent_coef=args.ent_coef,
         verbose=2,
         n_steps=args.n_steps,
+        n_epochs=20,
+        # Kill reward arrives at the end of a long approach. At gamma=0.99 with
+        # action_repeat=8 that signal was discounted into noise.
+        gamma=0.995,
         tensorboard_log=args.experiment_dir,
         learning_rate=learning_rate,
-        batch_size=args.batch_size,
+        batch_size=batch_size,
         clip_range=args.clip_range,
-    ) """
-    model: PPO = PPO(
-    "MultiInputPolicy",
-    env,
-    device="cuda",          # or "auto"
-    # 0.0001 was far too low: entropy collapsed from ~5.4 nats (near-uniform
-    # over 216 actions) to ~0.9 within 25k steps, locking the policy into a
-    # circling local optimum before it found the zombie.
-    ent_coef=args.ent_coef,
-    verbose=2,
-    n_steps=args.n_steps,
-    n_epochs=20,
-    # Kill reward arrives at the end of a long approach. At gamma=0.99 with
-    # action_repeat=8 that signal was discounted into noise.
-    gamma=0.995,
-    tensorboard_log=args.experiment_dir,
-    learning_rate=learning_rate,
-    batch_size=256,
-    clip_range=args.clip_range,
-    policy_kwargs=dict(net_arch=[256, 256])  # or [512, 512]
-)
+        policy_kwargs=dict(net_arch=[256, 256]),  # or [512, 512]
+        seed=args.seed,
+    )
+    print(
+        f"Training config: n_envs={env.num_envs} n_steps={args.n_steps} "
+        f"rollout={args.n_steps * env.num_envs} batch_size={batch_size} "
+        f"device={args.device} seed={args.seed}"
+    )
 else:
     path_zip = pathlib.Path(args.resume_model_path)
     print("Loading model: " + os.path.abspath(path_zip))
+    # PPO.load restores the saved hyperparameters, so --n_steps/--learning_rate
+    # etc. do not apply here. Print what is actually in effect.
     model = PPO.load(path_zip, env=env, tensorboard_log=args.experiment_dir)
+    print(
+        f"Resumed config (from {path_zip.name}): n_steps={model.n_steps} "
+        f"batch_size={model.batch_size} gamma={model.gamma} "
+        f"ent_coef={model.ent_coef} lr={model.learning_rate} "
+        f"n_epochs={model.n_epochs} device={model.device}"
+    )
 
 if args.inference:
     obs = env.reset()

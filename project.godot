@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="YMRL"
-run/main_scene="uid://bx563jjw3v4v0"
+run/main_scene="res://training/Training3Solo.tscn"
 config/features=PackedStringArray("4.7", "C#", "Forward Plus")
 config/icon="res://icon.svg"
 

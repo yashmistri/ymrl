@@ -2,7 +2,7 @@ extends Node2D
 
 
 @export var wave_size:int = 1
-@onready var enemy:PackedScene = preload("res://creature.tscn")
+@onready var enemy:PackedScene = preload("res://characters/creature/creature.tscn")
 
 func _ready():
 	for c in find_children("Creature*"):

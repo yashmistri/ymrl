@@ -1,0 +1,30 @@
+headless export (one-time setup, then build)
+python tools/export_headless.py --install-templates    # ~1.2 GB, first time only
+python tools/export_headless.py                        # -> build/YMRL.exe
+python tools/export_headless.py --check                # verify prerequisites
+
+train, export to .onnx for inference in godot and save to zip for later training
+python tools/train_sb3.py --onnx_export_path=model.onnx --save_model_path=models/model.zip
+
+train headless (no editor open)
+python tools/train_sb3.py --env_path build/YMRL.exe --save_model_path=models/model.zip
+
+resume training and save to same file
+python tools/train_sb3.py --resume_model_path=models/model.zip --save_model_path=models/model.zip
+
+run inference
+python tools/train_sb3.py --resume_model_path=models/model.zip --inference
+
+evaluate a policy (Phase 1)
+python tools/evaluate.py --model models/model.zip --episodes 100
+python tools/evaluate.py --model models/model.zip --env_path build/YMRL.exe --json eval.json
+
+notes:
+- --batch_size defaults to the full rollout (n_steps x n_envs) and must divide it.
+  Omit it unless you have a reason; a non-divisor is now rejected with an error.
+- --device defaults to "auto" (uses CUDA when available, falls back to CPU).
+- --n_steps, --learning_rate and friends only apply to NEW runs. Resuming loads
+  the saved hyperparameters; the script prints what is actually in effect.
+- --seed seeds both the env and the PPO policy.
+- evaluate.py reports return, length, kills, damage dealt/taken, kill rate and a
+  kills-per-episode histogram. Seeds are fixed so runs are comparable.
