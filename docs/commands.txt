@@ -19,6 +19,16 @@ evaluate a policy (Phase 1)
 python tools/evaluate.py --model models/model.zip --episodes 100
 python tools/evaluate.py --model models/model.zip --env_path build/YMRL.exe --json eval.json
 
+// train with hyperparameters modified on advice of AI
+python ymrl/tools/train_sb3.py `
+  --experiment_name exp_entropy_fix `
+  --timesteps 500000 `
+  --n_steps 256 `
+  --ent_coef 0.01 `
+  --gamma 0.995 `
+  --device cuda `
+  --resume_model_path=models/model.zip `
+  --save_model_path=models/model.zip
 notes:
 - --batch_size defaults to the full rollout (n_steps x n_envs) and must divide it.
   Omit it unless you have a reason; a non-divisor is now rejected with an error.

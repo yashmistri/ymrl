@@ -2,9 +2,20 @@ extends Node3D
 
 @onready var cam:Camera3D = $Camera3D
 @onready var zombie:PackedScene = load("res://characters/zombie3/zombie3.tscn")
-@onready var spawn_point:PathFollow3D = $SpawnPath/SpawnPoint
 @export var peaceful:bool=false
 @export var zombies_per_episode:int = 5
+# Spawn-distance curriculum. Zombies appear at a uniformly random distance in
+# [min_spawn_distance, max_spawn_distance] from the soldier, in metres, instead
+# of always on the far ring. Always starting far away forces the agent through
+# a long unrewarded approach before it can ever learn what an attack does;
+# mixing in short-range starts gives it solvable credit-assignment problems
+# that compose into the long-range behaviour. This is the "random legal
+# resets" trick that made sparse-reward PPO competitive with search-based
+# baselines in the Othello/Hex/Go self-play work.
+@export var min_spawn_distance:float = 3.0
+@export var max_spawn_distance:float = 22.0
+# Keep spawns clear of the arena walls so a zombie cannot appear inside one.
+const ARENA_HALF_EXTENT:float = 23.0
 var zombies_spawned:int = 0
 var zombies_killed:int = 0
 var _resetting:bool = false
@@ -129,13 +140,32 @@ func spawn():
 	# `position` before parenting would be re-offset by this node's transform,
 	# which pushes zombies outside the walls in the translated Main3 clones.
 	add_child(z, true)
-	spawn_point.progress_ratio = randf()
-	z.global_position = spawn_point.global_position
+	z.global_position = _pick_spawn_position()
 	z.target = $Soldier
 	z.name = "Zombie"
 	zombies_spawned += 1
 	if zombies_spawned >= zombies_per_episode:
 		$SpawnTimer.stop()
+
+# Uniformly random point in an annulus around the soldier, clamped to the
+# arena. Distances are sampled as sqrt to keep the distribution uniform over
+# area rather than biased toward the inner radius.
+func _pick_spawn_position() -> Vector3:
+	var soldier := $Soldier as Node3D
+	var origin := soldier.global_position if soldier else global_position
+	var low := minf(min_spawn_distance, max_spawn_distance)
+	var high := maxf(min_spawn_distance, max_spawn_distance)
+	var radius := sqrt(randf_range(low * low, high * high))
+	var angle := randf() * TAU
+	var offset := Vector3(cos(angle) * radius, 0.0, sin(angle) * radius)
+	var pos := origin + offset
+	# Clamp into the arena so a spawn near a wall cannot land outside it.
+	var local := to_local(pos)
+	local.x = clampf(local.x, -ARENA_HALF_EXTENT, ARENA_HALF_EXTENT)
+	local.z = clampf(local.z, -ARENA_HALF_EXTENT, ARENA_HALF_EXTENT)
+	pos = to_global(local)
+	pos.y = origin.y
+	return pos
 
 func _on_episode_timer_timeout() -> void:
 	_end_episode()

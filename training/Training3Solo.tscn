@@ -19,7 +19,7 @@ zombies_per_episode = 1
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.9262123, 1, 4.267624)
 
 [node name="SpawnPoint" parent="Main3/SpawnPath" parent_id_path=PackedInt32Array(216114808, 1063573395) index="0" unique_id=343208170]
-transform = Transform3D(0.99995685, 0, -0.009100193, 0, 1, 0, 0.009100193, 0, 0.99995685, -22.840332, 0, 22.870026)
+transform = Transform3D(0.99995667, 0, -0.009100191, 0, 1, 0, 0.009100191, 0, 0.99995667, -22.840332, 0, 22.870026)
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=353608218]
 transform = Transform3D(1, 0, 0, 0, 0.8331758, 0.55300826, 0, -0.55300826, 0.8331758, 0, 13.664315, 23.003225)

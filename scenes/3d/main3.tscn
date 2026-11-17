@@ -20,7 +20,16 @@ size = Vector3(1, 5, 50)
 [sub_resource type="SphereMesh" id="SphereMesh_hlpfh"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_6ve0f"]
+shading_mode = 0
 albedo_color = Color(0.37413925, 0.37413928, 0.37413922, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
+shading_mode = 0
+albedo_color = Color(0.72, 0.73, 0.75, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wall"]
+shading_mode = 0
+albedo_color = Color(0.32, 0.36, 0.44, 1)
 
 [sub_resource type="Curve3D" id="Curve3D_5tyq8"]
 closed = true
@@ -39,6 +48,7 @@ collision_mask = 3
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="StaticBody3D" unique_id=826778582]
 mesh = SubResource("BoxMesh_hlpfh")
+surface_material_override/0 = SubResource("StandardMaterial3D_floor")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D" unique_id=731915123]
 shape = SubResource("BoxShape3D_5tyq8")
@@ -49,6 +59,7 @@ collision_mask = 3
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="wall" unique_id=1216237774]
 mesh = SubResource("BoxMesh_5tyq8")
+surface_material_override/0 = SubResource("StandardMaterial3D_wall")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="wall" unique_id=1142268286]
 shape = SubResource("BoxShape3D_hlpfh")
@@ -59,6 +70,7 @@ collision_mask = 3
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="wall2" unique_id=557481276]
 mesh = SubResource("BoxMesh_5tyq8")
+surface_material_override/0 = SubResource("StandardMaterial3D_wall")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="wall2" unique_id=1437378458]
 shape = SubResource("BoxShape3D_hlpfh")
@@ -69,6 +81,7 @@ collision_mask = 3
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="wall3" unique_id=764105895]
 mesh = SubResource("BoxMesh_5tyq8")
+surface_material_override/0 = SubResource("StandardMaterial3D_wall")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="wall3" unique_id=500318570]
 shape = SubResource("BoxShape3D_hlpfh")
@@ -79,16 +92,13 @@ collision_mask = 3
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="wall4" unique_id=39682271]
 mesh = SubResource("BoxMesh_5tyq8")
+surface_material_override/0 = SubResource("StandardMaterial3D_wall")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="wall4" unique_id=1238492285]
 shape = SubResource("BoxShape3D_hlpfh")
 
 [node name="Soldier" parent="." unique_id=1328232549 instance=ExtResource("2_5tyq8")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
-
-[node name="Light" type="DirectionalLight3D" parent="." unique_id=962738175]
-transform = Transform3D(1, 0, 0, 0, 0.7071068, 0.7071068, 0, -0.7071068, 0.7071068, 0, 9, 0)
-shadow_enabled = true
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=1492015539]
 transform = Transform3D(1, 0, 0, 0, 0.82054496, 0.5715821, 0, -0.5715821, 0.82054496, 0, 25.453281, 45.542202)
@@ -99,7 +109,7 @@ mesh = SubResource("SphereMesh_hlpfh")
 surface_material_override/0 = SubResource("StandardMaterial3D_6ve0f")
 
 [node name="EpisodeTimer" type="Timer" parent="." unique_id=749716705]
-wait_time = 30.0
+wait_time = 60.0
 one_shot = true
 autostart = true
 
@@ -110,7 +120,7 @@ wait_time = 5.0
 curve = SubResource("Curve3D_5tyq8")
 
 [node name="SpawnPoint" type="PathFollow3D" parent="SpawnPath" unique_id=343208170]
-transform = Transform3D(0.9999574, 0, -0.009100198, 0, 1, 0, 0.009100198, 0, 0.9999574, -22.840332, 0, 22.870026)
+transform = Transform3D(0.99995726, 0, -0.009100197, 0, 1, 0, 0.009100197, 0, 0.99995726, -22.840332, 0, 22.870026)
 
 [node name="HUD" type="CanvasLayer" parent="." unique_id=201775517]
 

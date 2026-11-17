@@ -7,6 +7,8 @@ var spawn_pos:Vector3
 var target:Node3D
 func _ready():
 	spawn_pos = global_position
+	# Lets EntitySensor3D find zombies without walking the scene tree.
+	add_to_group("enemy")
 	if ai:
 		ai.init(self)
 	$hit.visible = false

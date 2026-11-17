@@ -165,9 +165,10 @@ func _create_shield() -> void:
 	disc.height = 0.1
 	_shield.mesh = disc
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.45, 0.62, 0.82)
-	mat.metallic = 0.8
-	mat.roughness = 0.28
+	# Unshaded: the arena has no lights, so metallic/roughness have nothing to
+	# react to. A bright flat colour keeps the shield readable when blocking.
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = Color(0.62, 0.82, 1.0)
 	_shield.material_override = mat
 	_shield.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_shield.rotation.x = PI / 2.0

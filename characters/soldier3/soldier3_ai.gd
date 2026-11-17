@@ -18,18 +18,28 @@ const ARENA_SIZE_Z: float = 50.0
 # net for episodes that never terminate on their own.
 const EPISODE_SECONDS: float = 30.0
 const PHYSICS_TICKS_PER_SECOND: float = 60.0
-# Reward per meter of ground gained on the nearest visible zombie. Small on
-# purpose: it only breaks the sparse-reward tie, the hit/kill rewards should
-# stay dominant.
-const APPROACH_REWARD_PER_METERS: float = 0.02
-# Sensor ray length in meters. Must match CharSensor.ray_length in
-# soldier3.tscn, since the sensor normalizes distance against it. The spawn
-# ring is ~23m in radius, so anything shorter leaves the zombie invisible for
-# most of an episode.
-const SENSOR_RAY_LENGTH: float = 30.0
+# Potential-based shaping weight for closing on the nearest visible zombie.
+#
+# This MUST be applied as F = gamma * phi(s') - phi(s) with phi = -distance,
+# not as a raw "reward per meter gained". Ng, Harada & Russell (ICML 1999)
+# showed potential-based shaping is the only form that provably leaves the
+# optimal policy unchanged. A raw per-meter reward pays for approaching but
+# never charges for retreating, so the agent can farm it by oscillating in and
+# out of sensor range -- the same bug that made a bicycle agent ride in
+# circles. Keep this small: it only breaks the sparse-reward tie.
+const APPROACH_SHAPING_WEIGHT: float = 0.02
+# Must match the PPO gamma in tools/train_sb3.py. Potential-based shaping is
+# only policy-invariant when this equals the learner's discount factor.
+const SHAPING_GAMMA: float = 0.995
+# Potential used when no zombie is visible. The potential must be defined for
+# every state, otherwise losing sight of the zombie reintroduces the
+# discontinuity that makes the reward farmable. Kept in sync with the entity
+# sensor's max_range so "invisible" means "at the edge of perception".
+const INVISIBLE_ZOMBIE_DISTANCE: float = 30.0
 
 @onready var char:CharacterBody3D=$".."
-@onready var char_sensor: RayCastSensor3D = $"../CharSensor"
+@onready var wall_sensor: RayCastSensor3D = $"../WallSensor"
+@onready var entity_sensor: EntitySensor3D = $"../EntitySensor"
 var target:Node3D
 # Distance to the nearest zombie seen last frame, in meters. -1 means "no
 # zombie visible", which is distinct from "very far away".
@@ -81,9 +91,10 @@ func _on_block_started() -> void:
 	reward -= BLOCK_COST
 	_episode_return -= BLOCK_COST
 
-# Called by the Sync node when an episode ends. Clearing the tracked distance
-# stops the first frame of the new episode from being compared against the
-# last frame of the old one (which would pay out a bogus approach reward).
+# Called by the Sync node when an episode ends. Resetting the tracked distance
+# to "invisible" means the first frame of the new episode starts from the same
+# fallback potential a fresh episode would have, so the shaping telescopes
+# cleanly across the episode boundary instead of paying out a jump.
 #
 # NOTE: the Sync node calls this AFTER get_info() has been read, so the
 # episode counters reported to VecMonitor are intact. The arena must not call
@@ -95,6 +106,10 @@ func reset() -> void:
 	_episode_kills = 0
 	_episode_damage_dealt = 0.0
 	_episode_damage_taken = 0.0
+	# Drop remembered entities so a new episode starts with empty slots rather
+	# than stale positions from the previous one.
+	if entity_sensor:
+		entity_sensor.reset()
 
 # The Sync node calls this once it has consumed the done flag. This is the
 # correct point to clear per-episode state, since get_info() has already been
@@ -129,13 +144,18 @@ func get_info() -> Dictionary:
 
 
 func get_obs() -> Dictionary:
-	# One sensor covers both walls (class 0) and zombies (class 1). Each ray
-	# contributes [distance, hit_class], so the array is interleaved.
-	var sensor_obs: Array = char_sensor.get_observation()
-	var result: Array = []
-	result.append_array(sensor_obs)
+	# Walls come from the raycast ring (geometry is what rays are good for).
+	# Enemies come from the slot sensor: each tracked zombie contributes its
+	# relative position, velocity, health and attack state directly, so the
+	# network does not have to invert ray hits into an entity estimate.
+	var wall_obs: Array = wall_sensor.get_observation()
+	var entity_obs: Array = entity_sensor.get_observation()
 
-	_update_approach_reward(sensor_obs)
+	var result: Array = []
+	result.append_array(wall_obs)
+	result.append_array(entity_obs)
+
+	_update_approach_reward(entity_obs)
 
 	# The body stays unrotated. Facing is the mesh yaw, wrapped to -1..1.
 	var facing: MeshInstance3D = $"../Mesh"
@@ -149,29 +169,37 @@ func get_obs() -> Dictionary:
 		])
 	return {"obs": result}
 
-# Finds the nearest ray that hit a zombie and rewards closing the gap. Only
-# compares when a zombie was visible on both frames: a zombie entering or
-# leaving the cone would otherwise read as a huge jump in distance.
-func _update_approach_reward(sensor_obs: Array) -> void:
-	var nearest := _nearest_zombie_distance(sensor_obs)
-	if nearest >= 0.0 and _prev_zombie_distance >= 0.0:
-		var shaping := (_prev_zombie_distance - nearest) * APPROACH_REWARD_PER_METERS
-		reward += shaping
-		_episode_return += shaping
+# Potential-based shaping: F = gamma * phi(s') - phi(s), with phi = -distance.
+#
+# phi is defined for every state: when no zombie is visible the potential is
+# -INVISIBLE_ZOMBIE_DISTANCE, so losing sight of the target is treated as
+# "very far away" rather than as a discontinuity. That keeps the shaping
+# telescoping over a whole episode -- the sum of F depends only on the start
+# and end potentials -- which is what makes it impossible to farm by
+# oscillating in and out of sensor range.
+func _update_approach_reward(entity_obs: Array) -> void:
+	var nearest := _nearest_zombie_distance(entity_obs)
+	var distance := nearest if nearest >= 0.0 else INVISIBLE_ZOMBIE_DISTANCE
+	var prev_distance := (
+		_prev_zombie_distance if _prev_zombie_distance >= 0.0 else INVISIBLE_ZOMBIE_DISTANCE
+	)
+	var shaping := SHAPING_GAMMA * (-distance) - (-prev_distance)
+	shaping *= APPROACH_SHAPING_WEIGHT
+	reward += shaping
+	_episode_return += shaping
 	_prev_zombie_distance = nearest
 
-# Sensor distance is normalized as (ray_length - distance) / ray_length, so
-# 0 is at the ray origin and 1 is at max range. Convert back to meters.
-func _nearest_zombie_distance(sensor_obs: Array) -> float:
+# Reads the nearest visible enemy out of the slot sensor's flat output.
+# Slot layout is [rel_x, rel_z, distance, bearing, vel_x, vel_z, health,
+# is_attacking, is_visible]; slot 2 is distance normalized by max_range and
+# slot 8 flags whether the entity was actually in range this frame.
+func _nearest_zombie_distance(entity_obs: Array) -> float:
 	var nearest := -1.0
-	# Step by 2: [distance, hit_class] per ray.
-	for i in range(0, sensor_obs.size() - 1, 2):
-		if sensor_obs[i + 1] <= 0.0:
+	var slot_size := EntitySensor3D.SLOT_SIZE
+	for i in range(0, entity_obs.size() - slot_size + 1, slot_size):
+		if entity_obs[i + 8] <= 0.0:
 			continue
-		var normalized: float = sensor_obs[i]
-		if normalized <= 0.0:
-			continue
-		var meters: float = (1.0 - normalized) * SENSOR_RAY_LENGTH
+		var meters: float = entity_obs[i + 2] * entity_sensor.max_range
 		if nearest < 0.0 or meters < nearest:
 			nearest = meters
 	return nearest

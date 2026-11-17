@@ -5,10 +5,12 @@
 [ext_resource type="Script" uid="uid://c265jjwap0lr" path="res://addons/godot_rl_agents/sensors/sensors_3d/RaycastSensor3D.gd" id="3_lbr5k"]
 [ext_resource type="Script" uid="uid://b0mvymfdox8t8" path="res://characters/common/hit.gd" id="4_hiq48"]
 [ext_resource type="PackedScene" uid="uid://dr07qfaemmbxc" path="res://characters/common/health_bar_3d.tscn" id="5_1iif0"]
+[ext_resource type="Script" path="res://characters/common/entity_sensor_3d.gd" id="6_entsens"]
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_hlpfh"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_7jswi"]
+shading_mode = 0
 albedo_color = Color(1, 0, 0, 1)
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_7jswi"]
@@ -18,7 +20,12 @@ albedo_color = Color(1, 0, 0, 1)
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_7jswi"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ttalx"]
-albedo_color = Color(0.53320026, 0.5408519, 0.494061, 1)
+shading_mode = 0
+albedo_color = Color(0.25, 0.55, 0.95, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_body"]
+shading_mode = 0
+albedo_color = Color(0.18, 0.42, 0.82, 1)
 
 [node name="Soldier" type="CharacterBody3D" unique_id=1328232549]
 collision_layer = 2
@@ -35,82 +42,20 @@ transform = Transform3D(1, 0, 0, 0, -4.371139e-08, 1, 0, -1, -4.371139e-08, 0, 1
 mesh = SubResource("CylinderMesh_hlpfh")
 surface_material_override/0 = SubResource("StandardMaterial3D_7jswi")
 
-[node name="CharSensor" type="Node3D" parent="." unique_id=688374579]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0, 0)
+[node name="WallSensor" type="Node3D" parent="." unique_id=688374579]
 script = ExtResource("3_lbr5k")
-collision_mask = 5
-boolean_class_mask = 4
-n_rays_width = 13.0
+collision_mask = 1
+n_rays_width = 8.0
 n_rays_height = 1.0
 ray_length = 30.0
-cone_width = 300.0
-class_sensor = true
+cone_width = 360.0
 metadata/_custom_type_script = "uid://c265jjwap0lr"
 
-[node name="node_0_0 0_1" type="RayCast3D" parent="CharSensor" unique_id=986453763]
-enabled = false
-target_position = Vector3(-6.6312265, 0, -7.4851074)
-collision_mask = 5
-
-[node name="node_1_0 0_1" type="RayCast3D" parent="CharSensor" unique_id=200349957]
-enabled = false
-target_position = Vector3(-9.034504, 0, -4.286926)
-collision_mask = 5
-
-[node name="node_2_0 0_1" type="RayCast3D" parent="CharSensor" unique_id=1231003177]
-enabled = false
-target_position = Vector3(-9.99189, 0, -0.4026594)
-collision_mask = 5
-
-[node name="node_3_0 0_1" type="RayCast3D" parent="CharSensor" unique_id=1958828907]
-enabled = false
-target_position = Vector3(-9.3501625, 0, 3.5460489)
-collision_mask = 5
-
-[node name="node_4_0 0_1" type="RayCast3D" parent="CharSensor" unique_id=1200869469]
-enabled = false
-target_position = Vector3(-7.2120247, 0, 6.9272437)
-collision_mask = 5
-
-[node name="node_5_0 0_1" type="RayCast3D" parent="CharSensor" unique_id=2037993530]
-enabled = false
-target_position = Vector3(-3.919666, 0, 9.199795)
-collision_mask = 5
-
-[node name="node_6_0 0_1" type="RayCast3D" parent="CharSensor" unique_id=133362973]
-enabled = false
-target_position = Vector3(0, 0, 10)
-collision_mask = 5
-
-[node name="node_7_0 0_0" type="RayCast3D" parent="CharSensor" unique_id=937908239]
-enabled = false
-target_position = Vector3(3.919666, 0, 9.199795)
-collision_mask = 5
-
-[node name="node_8_0 0_1" type="RayCast3D" parent="CharSensor" unique_id=1104594598]
-enabled = false
-target_position = Vector3(7.2120247, 0, 6.9272437)
-collision_mask = 5
-
-[node name="node_9_0 0_0" type="RayCast3D" parent="CharSensor" unique_id=1501148417]
-enabled = false
-target_position = Vector3(9.3501625, 0, 3.5460489)
-collision_mask = 5
-
-[node name="node_10_0 0_0" type="RayCast3D" parent="CharSensor" unique_id=1518118375]
-enabled = false
-target_position = Vector3(9.99189, 0, -0.4026594)
-collision_mask = 5
-
-[node name="node_11_0 0_1" type="RayCast3D" parent="CharSensor" unique_id=2038583724]
-enabled = false
-target_position = Vector3(9.034504, 0, -4.286926)
-collision_mask = 5
-
-[node name="node_12_0 0_1" type="RayCast3D" parent="CharSensor" unique_id=1434332345]
-enabled = false
-target_position = Vector3(6.6312265, 0, -7.4851074)
-collision_mask = 5
+[node name="EntitySensor" type="Node3D" parent="." unique_id=688374580]
+script = ExtResource("6_entsens")
+max_slots = 10
+max_range = 30.0
+target_group = "enemy"
 
 [node name="AI" type="Node3D" parent="." unique_id=50549052]
 script = ExtResource("2_lbr5k")
@@ -122,6 +67,7 @@ shape = SubResource("CapsuleShape3D_7jswi")
 [node name="Mesh" type="MeshInstance3D" parent="." unique_id=1304257598]
 cast_shadow = 0
 mesh = SubResource("CapsuleMesh_hlpfh")
+surface_material_override/0 = SubResource("StandardMaterial3D_body")
 
 [node name="forward" type="MeshInstance3D" parent="Mesh" unique_id=1783848235]
 transform = Transform3D(0.2503533, 0, 0, 0, -1.6029382e-08, 0.2503533, 0, -0.3667095, -1.0943292e-08, 0, 0.86022353, -0.27007627)

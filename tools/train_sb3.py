@@ -110,7 +110,10 @@ parser.add_argument(
     "--n_parallel",
     default=1,
     type=int,
-    help="How many instances of the environment executable to " "launch - requires --env_path to be set if > 1.",
+    help="How many separate environment executables to launch. Requires --env_path "
+    "when > 1: each parallel env is its own Godot process, which is what actually "
+    "parallelizes rollout collection. With --env_path omitted, training runs "
+    "in-editor against a single process and this must stay 1.",
 )
 parser.add_argument("--learning_rate", default=0.0003, type=float, help="The learning rate (default 0.0003)")
 parser.add_argument(
@@ -214,7 +217,45 @@ if args.inference and args.resume_model_path is None:
 if args.env_path is None and args.viz:
     print("Info: Using --viz without --env_path set has no effect, in-editor training will always render.")
 
-env = StableBaselinesGodotEnv(
+if args.n_parallel > 1 and args.env_path is None:
+    raise parser.error(
+        f"--n_parallel {args.n_parallel} requires --env_path. Each parallel env is a "
+        "separate Godot process; in-editor training drives the one open editor and "
+        "cannot be parallelized this way. Export a build first:\n"
+        "    python tools/export_headless.py\n"
+        "    python tools/train_sb3.py --env_path build/YMRL.exe --n_parallel "
+        f"{args.n_parallel}"
+    )
+
+if args.n_parallel < 1:
+    raise parser.error(f"--n_parallel must be >= 1, got {args.n_parallel}")
+
+if args.env_path is None and args.n_parallel == 1:
+    print(
+        "Info: in-editor training uses one Godot process. For real parallelism, "
+        "export a build and pass --env_path with --n_parallel > 1."
+    )
+
+
+class SeededGodotEnv(StableBaselinesGodotEnv):
+    """StableBaselinesGodotEnv with a working seed().
+
+    The upstream wrapper implements seed() as `raise NotImplementedError()`.
+    SB3 >= 2.0 calls env.seed() from _setup_model() whenever PPO(seed=...) is
+    given, so training crashed before the first step.
+
+    The seed already reaches Godot at launch: StableBaselinesGodotEnv passes it
+    to GodotEnv, which forwards it to the process as --env_seed. Nothing is left
+    to do here except satisfy the VecEnv contract, so this records the value and
+    reports it back rather than reseeding a running game.
+    """
+
+    def seed(self, seed=None):
+        self._seed = seed
+        return [None if seed is None else seed + i for i in range(self.num_envs)]
+
+
+env = SeededGodotEnv(
     env_path=args.env_path,
     show_window=args.viz,
     seed=args.seed,

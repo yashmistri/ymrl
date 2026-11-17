@@ -19,16 +19,16 @@ current = true
 size = 76.226
 
 [node name="Main3" parent="." unique_id=216114808 instance=ExtResource("2_2yiqy")]
+zombies_per_episode = 1
 
 [node name="Main4" parent="." unique_id=1398821752 instance=ExtResource("2_2yiqy")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -64, 0, 0)
+zombies_per_episode = 1
 
 [node name="Main5" parent="." unique_id=233175612 instance=ExtResource("2_2yiqy")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -61.370956)
+zombies_per_episode = 1
 
 [node name="Main6" parent="." unique_id=1381680097 instance=ExtResource("2_2yiqy")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -64, 0, -61.370956)
-
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=462924475]
-transform = Transform3D(-4.371139e-08, 0.7071068, -0.7071068, 0, 0.7071068, 0.7071068, 1, 3.090862e-08, -3.090862e-08, 0, 45.6966, -145.32437)
-shadow_enabled = true
+zombies_per_episode = 1
