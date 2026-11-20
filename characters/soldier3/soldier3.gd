@@ -8,17 +8,38 @@ signal blocked_attack(percent_blocked: float)
 # Emitted on the first physics frame an attack starts / block is held.
 signal attack_started
 signal block_started
+# Emitted when an attack was requested but refused because stamina was too low.
+signal attack_blocked_by_stamina
 
-const ATTACK_STAMINA_COST:float = 10.0
-const SPRINT_STAMINA_PER_SEC:float = 5.0
-const BLOCKED_HIT_STAMINA:float = 5.0
-const STAMINA_REGEN_PER_SEC:float = 15.0
-const STAMINA_REGEN_DELAY:float = 1.0
+# Stamina economy.
+#
+# Keep this tuned against COMBINED actions. The first attempt was tuned against
+# attacking alone and broke: the policy sprints and blocks while attacking, and
+# those stack. At cost=15 / sprint=8 / regen=8 the bar emptied in 4.7 s of
+# sprint+attack, so stamina never recovered, attacks_stamina_blocked hit ~348
+# per episode, and the agent abandoned attacking entirely.
+#
+# Current numbers (attack 1.43/s at the 0.7 s cooldown):
+#   attack drain      17.1/s
+#   sprint drain       4.0/s
+#   combined drain    21.1/s  vs 11.0/s regen -> net +10.1/s
+#   => ~9.9 s of sprint+attack empties the bar, ~9 s to refill
+#
+# Still a real constraint (it drains), but recovering is achievable inside an
+# episode, so resting pays off instead of being hopeless.
+const ATTACK_STAMINA_COST:float = 12.0
+const SPRINT_STAMINA_PER_SEC:float = 4.0
+const BLOCKED_HIT_STAMINA:float = 3.0
+const STAMINA_REGEN_PER_SEC:float = 11.0
+const STAMINA_REGEN_DELAY:float = 1.2
+# Sprinting cannot drain the bar past this floor. Without it, a policy that
+# holds sprint permanently starves every other action.
+const SPRINT_STAMINA_FLOOR:float = 10.0
 # Attacks from inside this frontal arc are halved while blocking.
 const BLOCK_ARC_DEGREES:float = 120.0
 const BLOCK_SPEED_SCALE:float = 0.7
 const SPRINT_SPEED:float = 1.5
-var max_stamina:float = 150.0
+var max_stamina:float = 100.0
 var current_stamina:float
 
 var requested_move:Vector2
@@ -35,7 +56,11 @@ var _shield: MeshInstance3D
 
 func _ready():
 	spawn_pos = global_position
-	attack_range = 1.0
+	# attack_range is NOT set here. It is an @export on Char3, configured in
+	# soldier3.tscn (currently 3.0). This function used to hardcode it to 1.0,
+	# which silently overrode the scene and left the soldier with a reach
+	# shorter than the zombie's (1.1 * 2.0 = 2.2m), so attacks could only land
+	# at point-blank range and damage_dealt read 0 in almost every episode.
 	current_stamina = max_stamina
 	if ai:
 		ai.init(self)
@@ -75,8 +100,35 @@ func attack():
 	if not can_attack or is_attacking:
 		return
 	if current_stamina < ATTACK_STAMINA_COST:
+		# Tell the agent its attack was REJECTED for lack of stamina. Without
+		# this the attempt is indistinguishable from a hit that missed, so the
+		# agent cannot learn that resting would let it attack again.
+		attack_blocked_by_stamina.emit()
 		return
 	_spend_stamina(ATTACK_STAMINA_COST)
+	# Snap aim to the nearest enemy for the attack frame.
+	#
+	# The policy's only way to change `aim` is the 3-way `turn` head, applied
+	# incrementally in _physics_process. Starting from Vector3.FORWARD, the agent
+	# has to discover that turning changes where an attack lands -- and a live
+	# run showed it attacking 123 degrees away from a zombie standing 1 m in
+	# front of it, so no hit ever connected. Aiming is a perception problem the
+	# EntitySensor has already solved, not something worth learning.
+	#
+	# `turn` still steers movement (it rotates the aim point that move is
+	# relative to), so the policy keeps its mobility. If no enemy is visible the
+	# attempt keeps whatever aim it already had.
+	if ai and ai.heuristic != "human":
+		var sensor = get_node_or_null("EntitySensor")
+		if sensor and sensor.has_method("nearest_target"):
+			var target: Node3D = sensor.nearest_target()
+			if target:
+				aim = target.global_position
+	# Emitted HERE, not from the is_attacking edge in _physics_process.
+	# super.attack() sets is_attacking = true synchronously, so the edge check
+	# in _physics_process always saw it already set and never fired. That meant
+	# ATTACK_COST was never charged and attacks_started never counted.
+	attack_started.emit()
 	super.attack()
 
 func _physics_process(delta: float) -> void:
@@ -86,7 +138,6 @@ func _physics_process(delta: float) -> void:
 	# assigned every frame (human input or requested action), so comparing
 	# against the previous frame's value gives exactly one emit per action.
 	var was_blocking := is_blocking
-	var was_attacking := is_attacking
 	if ai.heuristic == "human":
 		
 		aim = $"../Cursor".global_position
@@ -111,8 +162,8 @@ func _physics_process(delta: float) -> void:
 	_shield.visible = is_blocking
 	if is_blocking and not was_blocking:
 		block_started.emit()
-	if is_attacking and not was_attacking:
-		attack_started.emit()
+	# attack_started is emitted from attack() itself, not here: super.attack()
+	# sets is_attacking synchronously, so this edge never saw the transition.
 	super._physics_process(delta)
 
 func take_damage(damage:float, attacker: Node3D = null) -> Dictionary:
@@ -144,10 +195,15 @@ func die():
 func swing():
 	pass
 
-# Drains sprint stamina. Holding block is free. Returns true when this frame is spent sprinting.
+# Drains sprint stamina, but never below SPRINT_STAMINA_FLOOR. Holding block is
+# free. Returns true when this frame is spent sprinting.
+#
+# The floor exists so sprint cannot starve the bar: a policy that holds sprint
+# permanently previously drove stamina to zero and then could not afford an
+# attack (or recover, since sprint kept resetting the regen delay).
 func _apply_stamina(delta: float) -> bool:
-	if is_running and current_stamina > 0.0:
-		_spend_stamina(minf(SPRINT_STAMINA_PER_SEC * delta, current_stamina))
+	if is_running and current_stamina > SPRINT_STAMINA_FLOOR:
+		_spend_stamina(minf(SPRINT_STAMINA_PER_SEC * delta, current_stamina - SPRINT_STAMINA_FLOOR))
 		return true
 	_time_since_stamina_use += delta
 	if _time_since_stamina_use < STAMINA_REGEN_DELAY or current_stamina >= max_stamina:

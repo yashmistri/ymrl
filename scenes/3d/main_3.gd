@@ -43,6 +43,11 @@ func _ready():
 	if zombies_spawned < zombies_per_episode:
 		$SpawnTimer.start()
 	_connect_soldiers()
+	# Start the episode clock explicitly. The scene sets autostart = true, but
+	# that flag is not reliable across instancing (observed false at runtime),
+	# and without it an episode only ends on a death or a full clear -- so a
+	# passive policy runs until the trainer's step cap.
+	$EpisodeTimer.start()
 
 # Soldiers are instantiated scene children, so wire their death signal here
 # rather than in the scene file. The arena owns the reset.

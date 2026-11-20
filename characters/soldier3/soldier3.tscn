@@ -5,7 +5,7 @@
 [ext_resource type="Script" uid="uid://c265jjwap0lr" path="res://addons/godot_rl_agents/sensors/sensors_3d/RaycastSensor3D.gd" id="3_lbr5k"]
 [ext_resource type="Script" uid="uid://b0mvymfdox8t8" path="res://characters/common/hit.gd" id="4_hiq48"]
 [ext_resource type="PackedScene" uid="uid://dr07qfaemmbxc" path="res://characters/common/health_bar_3d.tscn" id="5_1iif0"]
-[ext_resource type="Script" path="res://characters/common/entity_sensor_3d.gd" id="6_entsens"]
+[ext_resource type="Script" uid="uid://bskh76dt2spfw" path="res://characters/common/entity_sensor_3d.gd" id="6_entsens"]
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_hlpfh"]
 
@@ -17,21 +17,23 @@ albedo_color = Color(1, 0, 0, 1)
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_hlpfh"]
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_body"]
+shading_mode = 0
+albedo_color = Color(0.18, 0.42, 0.82, 1)
+
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_7jswi"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ttalx"]
 shading_mode = 0
 albedo_color = Color(0.25, 0.55, 0.95, 1)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_body"]
-shading_mode = 0
-albedo_color = Color(0.18, 0.42, 0.82, 1)
-
 [node name="Soldier" type="CharacterBody3D" unique_id=1328232549]
 collision_layer = 2
 collision_mask = 7
 script = ExtResource("1_cj67r")
-attack_range = 2.25
+damage = 20.0
+max_health = 200.0
+attack_range = 3.0
 
 [node name="hit" type="Node3D" parent="." unique_id=157257603]
 transform = Transform3D(0.38109845, 0, 0, 0, 0.38109845, 0, 0, 0, 0.38109845, 0, 0, 0)
@@ -44,18 +46,46 @@ surface_material_override/0 = SubResource("StandardMaterial3D_7jswi")
 
 [node name="WallSensor" type="Node3D" parent="." unique_id=688374579]
 script = ExtResource("3_lbr5k")
-collision_mask = 1
 n_rays_width = 8.0
 n_rays_height = 1.0
 ray_length = 30.0
 cone_width = 360.0
 metadata/_custom_type_script = "uid://c265jjwap0lr"
 
+[node name="node_0_0 0_0" type="RayCast3D" parent="WallSensor" unique_id=828570063]
+enabled = false
+target_position = Vector3(-11.480503, 0, -27.716387)
+
+[node name="node_1_0 0_0" type="RayCast3D" parent="WallSensor" unique_id=1731997246]
+enabled = false
+target_position = Vector3(-27.716387, 0, -11.480503)
+
+[node name="node_2_0 0_0" type="RayCast3D" parent="WallSensor" unique_id=1353928173]
+enabled = false
+target_position = Vector3(-27.716387, 0, 11.480503)
+
+[node name="node_3_0 0_0" type="RayCast3D" parent="WallSensor" unique_id=1873992632]
+enabled = false
+target_position = Vector3(-11.480503, 0, 27.716387)
+
+[node name="node_4_0 0_0" type="RayCast3D" parent="WallSensor" unique_id=1976586784]
+enabled = false
+target_position = Vector3(11.480503, 0, 27.716387)
+
+[node name="node_5_0 0_0" type="RayCast3D" parent="WallSensor" unique_id=482430580]
+enabled = false
+target_position = Vector3(27.716387, 0, 11.480503)
+
+[node name="node_6_0 0_0" type="RayCast3D" parent="WallSensor" unique_id=862952542]
+enabled = false
+target_position = Vector3(27.716387, 0, -11.480503)
+
+[node name="node_7_0 0_0" type="RayCast3D" parent="WallSensor" unique_id=249666231]
+enabled = false
+target_position = Vector3(11.480503, 0, -27.716387)
+
 [node name="EntitySensor" type="Node3D" parent="." unique_id=688374580]
 script = ExtResource("6_entsens")
-max_slots = 10
-max_range = 30.0
-target_group = "enemy"
 
 [node name="AI" type="Node3D" parent="." unique_id=50549052]
 script = ExtResource("2_lbr5k")

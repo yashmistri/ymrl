@@ -443,18 +443,45 @@ func connect_to_server():
 	print("Waiting for one second to allow server to start")
 	OS.delay_msec(1000)
 	print("trying to connect to server")
-	stream = StreamPeerTCP.new()
+
+	# Retry loop. The original made exactly ONE attempt and returned as soon as
+	# the status reached "failed", so the game gave up whenever Python had not
+	# finished importing torch yet (15-20 s on a warm venv, longer cold) and fell
+	# back to human controls with no useful message. A StreamPeerTCP that reaches
+	# STATUS_ERROR is terminal, so each attempt gets a fresh peer.
+	var attempts := 30
+	var retry_delay_msec := 500
+	var attempt_timeout_msec := 2000
 
 	# "localhost" was not working on windows VM, had to use the IP
-	var ip = "127.0.0.1"
-	var port = _get_port()
-	var connect = stream.connect_to_host(ip, port)
-	stream.set_no_delay(true)  # TODO check if this improves performance or not
-	stream.poll()
-	# Fetch the status until it is either connected (2) or failed to connect (3)
-	while stream.get_status() < 2:
-		stream.poll()
-	return stream.get_status() == 2
+	var ip: String = "127.0.0.1"
+	var port: int = _get_port()
+
+	for attempt in range(1, attempts + 1):
+		print("trying to connect to server (attempt %d/%d)" % [attempt, attempts])
+		var peer := StreamPeerTCP.new()
+		if peer.connect_to_host(ip, port) == OK:
+			peer.set_no_delay(true)
+			var deadline := Time.get_ticks_msec() + attempt_timeout_msec
+			while peer.get_status() == StreamPeerTCP.STATUS_CONNECTING:
+				peer.poll()
+				if Time.get_ticks_msec() > deadline:
+					break
+				OS.delay_msec(10)
+			if peer.get_status() == StreamPeerTCP.STATUS_CONNECTED:
+				stream = peer
+				print("connected to Python server on port %d" % port)
+				return true
+		peer.disconnect_from_host()
+		OS.delay_msec(retry_delay_msec)
+
+	print("Could not connect to the Python server after %d attempts on port %d." % [attempts, port])
+	print(
+		"  Start the trainer FIRST, then press play. Training begins listening "
+		+ "within ~20 s (torch import), which is longer than a single connect "
+		+ "attempt allows."
+	)
+	return false
 
 
 func _get_args():

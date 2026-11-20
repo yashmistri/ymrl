@@ -1,40 +1,208 @@
+================================================================================
+START HERE
+================================================================================
+
+Run everything from the project root:
+
+    cd <repo>/ymrl        e.g. D:\Documents\ymrl_root\ymrl
+
+The scripts live in tools/ (tools/train_sb3.py, tools/evaluate.py).
+They are NOT under ymrl/tools/ unless you start one level up.
+
+
+--- 1. FINE-TUNE THE CURRENT BEST MODEL --------------------------------------
+
+    python tools/train_sb3.py `
+      --experiment_name soldier_finetune `
+      --timesteps 20000 `
+      --n_steps 256 `
+      --ent_coef 0.001 `
+      --linear_lr_schedule `
+      --resume_model_path=models/soldier_best_64pct.zip `
+      --save_model_path=models/soldier_next.zip `
+      --onnx_export_path=models/soldier_next.onnx
+
+This is the configuration that works: 64% kill rate at n=50, up from a 42%
+baseline. See "Training results so far" below for why each flag matters.
+
+
+--- 2. TRAIN FROM SCRATCH ----------------------------------------------------
+
+    python tools/train_sb3.py `
+      --experiment_name soldier_scratch `
+      --timesteps 200000 `
+      --n_steps 256 `
+      --ent_coef 0.01 `
+      --save_model_path=models/soldier_scratch.zip
+
+Use ent_coef 0.01 for a fresh run: that is what every from-scratch run in this
+project used, and 0.001 has NOT been tested from scratch (it is not known to
+fail there, just untested). For fine-tuning an existing checkpoint low entropy
+is what stops it degrading -- see the results table below for the evidence.
+
+
+--- 3. EVALUATE (do this before believing any training number) ---------------
+
+    python tools/evaluate.py --model models/soldier_best_64pct.zip --episodes 50
+
+50 episodes minimum. Four episodes gave 75% for a model that scores 42% at
+n=50. Seeds are fixed, so runs are comparable.
+
+
+================================================================================
+CRITICAL: ORDER OF OPERATIONS (in-editor)
+================================================================================
+
+Start Python FIRST, then press PLAY:
+
+    1. python tools/train_sb3.py ...     # blocks on "waiting for remote
+                                         #  GODOT connection on port 11008"
+    2. wait until this returns a row:
+         Get-NetTCPConnection -LocalPort 11008 -State Listen
+    3. press PLAY on training/Training3Solo.tscn
+
+Startup takes 15-20 s (torch import + CUDA init). Poll for the listener; do not
+sleep a fixed number of seconds and hope.
+
+If the game starts before Python is listening it silently falls back to human
+controls ("Couldn't connect to Python server") and Python dies on TimeoutError.
+sync.gd now retries 30 times over ~15 s, but Python-first is still the reliable
+order.
+
+Also: project_run runs whatever scene the EDITOR HAS OPEN. If a probe left
+soldier3.tscn or zombie3.tscn selected you will get a debugger break and no
+connection. Confirm current_scene is training/Training3Solo.tscn first.
+
+
+================================================================================
+TRAINING RESULTS SO FAR (n=50, deterministic)
+================================================================================
+
+    model                        kill_rate   notes
+    models/soldier_best_64pct.zip    64%     CURRENT BEST (v9)
+    models/soldier_baseline_42pct.zip 42%    pre-fine-tune baseline (v7 40k step)
+    models/soldier_v7final_33pct.zip  33%    v7 final step (degraded from 42%)
+    models/soldier_v8_degraded.zip    12%    ent_coef 0.01 fine-tune -- FAILED
+
+What this established:
+
+  ent_coef is the dominant setting when fine-tuning. Two 20k runs from the
+  same 42% baseline, differing ONLY in ent_coef:
+      ent_coef 0.01  -> declined every step, ended at 12%
+      ent_coef 0.001 -> held 61-71%, evaluated 64%
+  High entropy pressure dismantles a policy that has already converged.
+
+  LR decay must have a floor. Decaying to 0 froze the policy at ~1.8e-06 and
+  it could not recover from a dip (peaked 86%, fell to 64%). Now decays to
+  10% of initial (LR_FLOOR_FRACTION in train_sb3.py).
+
+  Evaluation beats training logs. Training's success_rate is measured on a
+  STOCHASTIC policy; evaluate.py uses argmax. They are not comparable, and the
+  rolling-window numbers were consistently more optimistic than reality.
+
+
+================================================================================
+ENVIRONMENT
+================================================================================
+
+Shapes (train_sb3.py asserts these at startup; a mismatch exits with a message)
+    observation: 103 floats
+        8   wall rays     (WallSensor, walls only)
+        90  entity slots  (EntitySensor: 10 slots x 9 values per enemy)
+        5   manual        (health, stamina, x, z, yaw)
+    actions: MultiDiscrete([9, 3, 2, 2, 2]) -- alphabetical, see below
+        attack (2), block (2), move (9), sprint (2), turn (3)
+
+    Checkpoints saved under a different shape are NOT loadable. A tensor-shape
+    crash from PPO.load means this, not a corrupt file.
+
+    The action keys in soldier3_ai.gd::get_action_space() are declared
+    ALPHABETICALLY on purpose. Godot's JSON.stringify sorts keys but
+    sync.gd::_extract_action_dict slices by insertion order; if those disagree
+    every action goes to the wrong head, silently. Do not reorder them.
+
+Scene and mechanics
+    Arena: scenes/3d/main3.tscn -- 50x50, 60 s episodes.
+    training/Training3Solo.tscn overrides some values; the scene wins.
+
+    Zombies: training/Training3Solo.tscn sets zombies_per_episode = 3. Note the
+    script default in main_3.gd is 5 -- the scene override is what training uses.
+
+    Zombies walk at 2.0 and run at 4.0 once below half health.
+    They freeze during their 0.4 s attack wind-up, so backing off can escape.
+
+    Soldier speed_stat is the Char3 default of 3.0. It is only read in
+    soldier3.gd (line 161), never assigned, and the scene does not set it.
+
+Episode ends on: soldier death, EpisodeTimer (60 s), or all zombies killed.
+All three set `done`, which is what makes info["episode"] appear.
+
+
+================================================================================
+HYPERPARAMETERS: WHAT THE FLAGS DO
+================================================================================
+
+Applied on resume only:
+    --learning_rate   (with --linear_lr_schedule)
+    --ent_coef
+Everything else is restored from the checkpoint and IGNORED on resume:
+    --n_steps, --batch_size, --gamma, --clip_range, --n_epochs
+
+    The script prints "Resumed config (...)" -- read it, it shows what is
+    actually in effect.
+
+NOT command-line flags at all:
+    gamma = 0.995 is hardcoded in the PPO(...) call. There is no --gamma flag
+    and parse_known_args() silently swallows one if you pass it.
+    SHAPING_GAMMA in soldier3_ai.gd MUST equal it, or the potential-based
+    reward shaping loses its policy-invariance guarantee. Change both together.
+
+    --batch_size defaults to the full rollout (n_steps x n_envs) and must
+    divide it evenly; a non-divisor is rejected with an explicit error.
+
+    --device defaults to "auto" (CUDA when available).
+
+    --n_parallel > 1 requires --env_path; each parallel env is a separate
+    Godot process, so in-editor training cannot be parallelized.
+
+Reward design
+    Shaping is potential-based (F = gamma*phi(s') - phi(s), phi = -distance).
+    Do NOT replace it with a raw per-metre reward -- that pays for approaching
+    without charging for retreating and the agent learns to oscillate.
+
+    Zombies spawn at a random distance in [3, 22] m, a deliberate curriculum
+    giving short and long credit-assignment problems in the same run.
+
+    HURT_PENALTY_FACTOR 5.0 (0.125 per zombie hit, ~80 hits per kill). At 1.0
+    damage was free; at 20.0 the damage term drowned the kill signal with
+    multiple zombies.
+
+    Blocking is charged 0.004 per step held, on top of the 0.05 press cost.
+    Without the per-step charge a policy held block 100% of the time and farmed
+    the block reward while never attacking.
+
+
+================================================================================
+OTHER COMMANDS
+================================================================================
+
 headless export (one-time setup, then build)
-python tools/export_headless.py --install-templates    # ~1.2 GB, first time only
-python tools/export_headless.py                        # -> build/YMRL.exe
-python tools/export_headless.py --check                # verify prerequisites
+    python tools/export_headless.py --install-templates    # ~1.2 GB, first time
+    python tools/export_headless.py                        # -> build/YMRL.exe
+    python tools/export_headless.py --check                # verify prerequisites
 
-train, export to .onnx for inference in godot and save to zip for later training
-python tools/train_sb3.py --onnx_export_path=model.onnx --save_model_path=models/model.zip
+train headless (no editor; also the only way to use --n_parallel > 1)
+    python tools/train_sb3.py --env_path build/YMRL.exe --n_parallel 4 `
+      --save_model_path=models/soldier.zip
 
-train headless (no editor open)
-python tools/train_sb3.py --env_path build/YMRL.exe --save_model_path=models/model.zip
+run inference with a trained model
+    python tools/train_sb3.py --resume_model_path=models/soldier_best_64pct.zip --inference
 
-resume training and save to same file
-python tools/train_sb3.py --resume_model_path=models/model.zip --save_model_path=models/model.zip
+evaluate against a JSON report
+    python tools/evaluate.py --model models/soldier_best_64pct.zip --episodes 50 `
+      --json eval.json
 
-run inference
-python tools/train_sb3.py --resume_model_path=models/model.zip --inference
-
-evaluate a policy (Phase 1)
-python tools/evaluate.py --model models/model.zip --episodes 100
-python tools/evaluate.py --model models/model.zip --env_path build/YMRL.exe --json eval.json
-
-// train with hyperparameters modified on advice of AI
-python ymrl/tools/train_sb3.py `
-  --experiment_name exp_entropy_fix `
-  --timesteps 500000 `
-  --n_steps 256 `
-  --ent_coef 0.01 `
-  --gamma 0.995 `
-  --device cuda `
-  --resume_model_path=models/model.zip `
-  --save_model_path=models/model.zip
-notes:
-- --batch_size defaults to the full rollout (n_steps x n_envs) and must divide it.
-  Omit it unless you have a reason; a non-divisor is now rejected with an error.
-- --device defaults to "auto" (uses CUDA when available, falls back to CPU).
-- --n_steps, --learning_rate and friends only apply to NEW runs. Resuming loads
-  the saved hyperparameters; the script prints what is actually in effect.
-- --seed seeds both the env and the PPO policy.
-- evaluate.py reports return, length, kills, damage dealt/taken, kill rate and a
-  kills-per-episode histogram. Seeds are fixed so runs are comparable.
+save a checkpoint more often (long runs; killable without losing everything)
+    add: --save_checkpoint_frequency 20000
+    The script refuses to reuse an existing checkpoint directory, so use a new
+    --experiment_name per run.

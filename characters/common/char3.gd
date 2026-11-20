@@ -4,9 +4,13 @@ class_name Char3
 @export var speed_stat = 3.0
 
 const STRAFE_SPEED:float = 0.75
+# Backpedalling uses the same factor as strafing. It was 0.5, which made
+# retreating strictly worse than sidestepping and left attacking-while-retreating
+# (5.0 * 0.5 attack * 0.5) at 1.25 -- far below the zombie's 4.0.
+const BACKPEDAL_SPEED:float = 0.75
 var current_speed:float
 @export var damage:float = 10.0
-var max_health:float = 100.0
+@export var max_health:float = 100.0
 var current_health:float
 var move:Vector3
 @export var attack_range:float =1.0
@@ -69,9 +73,10 @@ func _physics_process(delta: float) -> void:
 		# Facing -Z, right is +X: forward (0, 0, -1) -> right (1, 0, 0).
 		var right := Vector3(-forward.z, 0.0, forward.x)
 		# move.x: strafe, + is right. move.z: W is -1 (toward aim), S is +1.
-		# strafing 0.75 and backpedaling 0.5 of speed
 		if move.z > 0.0:
-			move.z *= 0.5
+			move.z *= BACKPEDAL_SPEED
+		else:
+			move.z *= 1.0
 		velocity = (right * move.x * STRAFE_SPEED - forward * move.z) * current_speed
 	else:
 		velocity = Vector3.ZERO
@@ -86,8 +91,14 @@ func attack():
 		return
 	debug_log("attack", "{0} attack".format([name]))
 
+	# Snapshot the aim NOW. _physics_process overwrites `aim` every frame (from
+	# the cursor in human mode, from requested_turn in AI mode), so by the time
+	# the startup delay below elapses `aim` no longer points at what the caller
+	# aimed at. Without this snapshot the ray fires along a stale direction and
+	# every attack misses.
+	var attack_aim := aim
 	if $hit:
-		$hit.flash(aim)
+		$hit.flash(attack_aim)
 	is_attacking = true
 	await get_tree().create_timer(attack_startup).timeout
 	if not is_inside_tree():
@@ -97,9 +108,8 @@ func attack():
 	# The body is not rotated toward aim; only the mesh is. RayCast3D.target_position
 	# is local to the ray. Normalizing a world position aims from the world origin,
 	# so the ray hits only when this body happens to stand on that line.
-	# Cast from here toward the current aim. Check: aim one unit on +Z, unrotated
-	# ray -> target_position (0, 0, attack_range).
-	var to_target := aim - global_position
+	# Cast from here toward the aim captured at attack time.
+	var to_target := attack_aim - global_position
 	var ray: RayCast3D = $ray
 	if to_target.length_squared() > 0.000001:
 		ray.target_position = ray.global_basis.inverse() * to_target.normalized() * attack_range

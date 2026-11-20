@@ -71,6 +71,27 @@ func get_observation() -> Array:
 	return out
 
 
+## Nearest tracked, living, in-range enemy. Returns null when none is visible.
+## Used by the soldier to snap its aim on attack, so the policy does not have
+## to discover incremental turning in order to land a hit.
+func nearest_target() -> Node3D:
+	var best: Node3D = null
+	var best_dist := INF
+	for i in max_slots:
+		var entity = _slots[i]
+		if entity == null or not is_instance_valid(entity):
+			continue
+		if "is_dead" in entity and entity.is_dead:
+			continue
+		var d := _distance_to(entity)
+		if d > max_range or d >= best_dist:
+			continue
+		best_dist = d
+		best = entity
+	return best
+
+
+
 func _refresh_slots() -> void:
 	var candidates := _collect_candidates()
 	var in_range := {}
