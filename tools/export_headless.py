@@ -149,10 +149,16 @@ def download(url: str, destination: Path, attempts: int = 5) -> None:
 def install_templates() -> None:
     """Download and unpack the Mono export templates for this Godot version."""
     target = templates_dir()
+    # GitHub release TAGS use a hyphen ("4.7.2-stable") while Godot's local
+    # template DIRECTORY uses dots ("4.7.2.stable.mono"). Deriving the URL
+    # straight from GODOT_VERSION produced ".../download/4.7.2.stable/..." and
+    # a 404 on every retry, so the tag and the asset name must be built from
+    # the dashed form.
+    release_tag = GODOT_VERSION.replace(".mono", "").replace(".stable", "-stable")
     url = (
         f"https://github.com/godotengine/godot/releases/download/"
-        f"{GODOT_VERSION.replace('.mono', '')}/"
-        f"Godot_v{GODOT_VERSION.replace('.mono', '')}_mono_export_templates.tpz"
+        f"{release_tag}/"
+        f"Godot_v{release_tag}_mono_export_templates.tpz"
     )
     archive = BUILD_DIR / "export_templates.tpz"
     BUILD_DIR.mkdir(parents=True, exist_ok=True)

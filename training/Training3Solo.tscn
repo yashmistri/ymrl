@@ -13,7 +13,7 @@ speed_up = 10.0
 metadata/_custom_type_script = "uid://coprvdmwywes7"
 
 [node name="Main3" parent="." unique_id=216114808 instance=ExtResource("2_fmvva")]
-zombies_per_episode = 3
+zombies_per_episode = 5
 
 [node name="Soldier" parent="Main3" index="5" unique_id=1328232549]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.9262123, 1, 4.267624)

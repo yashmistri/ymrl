@@ -29,7 +29,7 @@ albedo_color = Color(0.25, 0.55, 0.95, 1)
 
 [node name="Soldier" type="CharacterBody3D" unique_id=1328232549]
 collision_layer = 2
-collision_mask = 7
+collision_mask = 1
 script = ExtResource("1_cj67r")
 damage = 20.0
 max_health = 200.0

@@ -113,7 +113,30 @@ parser.add_argument(
     "training will run without rendering the simulation. This setting does not apply to in-editor training.",
     default=False,
 )
-parser.add_argument("--speedup", default=1, type=int, help="Whether to speed up the physics in the env")
+parser.add_argument(
+    "--speedup",
+    default=None,
+    type=int,
+    help=(
+        "Physics speed-up factor. Leave unset to use the scene's Sync.speed_up "
+        "(recommended). NOTE: this only reaches a build launched with --env_path; "
+        "in-editor training ignores it, because the editor's PLAY command line "
+        "never carries it. The old default of 1 was a silent trap: godot_rl "
+        "forwards --speedup=1 to the export, which overrides the scene's 10 and "
+        "drops throughput to real-time 60 ticks/s (measured 6 env steps/s, single env)."
+    ),
+)
+parser.add_argument(
+    "--fixed_fps",
+    default=None,
+    type=int,
+    help=(
+        "Pass --fixed-fps N to an exported build (--env_path only). godot_rl "
+        "adds the flag only when this is set. MEASURED on this project it made "
+        "no difference to an exported build (50 fps at --fixed_fps 2000 vs 50 "
+        "without), so treat it as a knob to try, not a fix."
+    ),
+)
 parser.add_argument(
     "--action_repeat",
     default=None,
@@ -326,6 +349,7 @@ env = SeededGodotEnv(
     n_parallel=args.n_parallel,
     speedup=args.speedup,
     action_repeat=args.action_repeat,
+    framerate=args.fixed_fps,
 )
 env = VecMonitor(env)
 

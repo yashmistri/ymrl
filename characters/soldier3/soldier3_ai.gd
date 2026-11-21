@@ -28,6 +28,29 @@ const BLOCK_COST: float = 0.05
 # damage_blocked while never attacking. A per-step charge makes uptime cost
 # scale with duration, so blocking has to be selective.
 const BLOCK_HOLD_COST_PER_STEP: float = 0.004
+# Charged EVERY step, unconditionally. This is what makes delay cost something.
+#
+# Without it the reward prices damage (HURT_PENALTY_FACTOR) and killing
+# (KILL_REWARD) but not elapsed time, so the cheapest way to raise return is to
+# never get hit and kill whenever. That is exactly what the v10 -> v11 50k
+# continuation learned: same kills per episode (2.92), damage taken 2.36 ->
+# 0.77, but episode length 268 -> 315 and idle fraction 0.07 -> 0.21, for a
+# higher return (32.28 -> 34.68). The soldier orbits and loiters instead of
+# committing.
+#
+# 0.004/step is deliberate: it is the same magnitude as
+# BLOCK_HOLD_COST_PER_STEP, which is already known to be strong enough to stop
+# block-farming on this reward scale. Over a 315-step episode it costs ~1.3
+# against KILL_REWARD 10.0 -- present, not dominant.
+#
+# MEASURED (50k fine-tunes from soldier_v11, n=50 each, 3 zombies):
+#   without it  idle 0.21, attack_frac 0.57, length 315, damage 0.77
+#   with it     idle 0.10, attack_frac 0.68, length 296, damage 0.48
+# Same kill rate (100%) and slightly more kills/episode. It does what it says:
+# it converts loitering into engagement without costing safety. The 5-zombie
+# experiment ran with this OFF and idle fell to 0.02 on its own -- a harder
+# scene removes the spare time that loitering feeds on. See docs/commands.txt.
+const TIME_COST_PER_STEP: float = 0.004
 # Floor is 50 by 50, centered on the origin. Half of that maps an edge to ±1.
 const ARENA_SIZE_X: float = 50.0
 const ARENA_SIZE_Z: float = 50.0
@@ -286,6 +309,9 @@ func get_obs() -> Dictionary:
 # behaviour we would expect if the agent had learned to rest for stamina.
 func _sample_step_stats() -> void:
 	_step_total += 1
+	# Charge for the step itself. See TIME_COST_PER_STEP for why this exists.
+	reward -= TIME_COST_PER_STEP
+	_episode_return -= TIME_COST_PER_STEP
 	if char.current_stamina >= char.max_stamina - 0.01:
 		_step_at_full_stamina += 1
 	var moving: bool = char.requested_move.length_squared() > 0.0001

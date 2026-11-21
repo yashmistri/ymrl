@@ -10,20 +10,61 @@ The scripts live in tools/ (tools/train_sb3.py, tools/evaluate.py).
 They are NOT under ymrl/tools/ unless you start one level up.
 
 
+################################################################################
+RULE: RE-EXPORT AFTER EVERY SOURCE CHANGE, BEFORE TRAINING
+################################################################################
+
+Training with --env_path runs build/YMRL.exe, and the export BAKES every .gd
+and .tscn into the .pck. So:
+
+    ANY change to a script or a scene INVALIDATES build/YMRL.exe.
+    Re-export before the next --env_path training run, ALWAYS.
+
+There is no warning if you forget. The build happily runs the old code, the
+run looks normal, and the numbers reflect the settings you thought you had
+replaced. This is the single easiest way to waste a training run in this
+project.
+
+    python tools/export_headless.py            # after every source change
+    python tools/train_sb3.py --env_path build/YMRL.exe ...
+    python tools/evaluate.py --model ... --env_path build/YMRL.exe ...
+
+It nearly cost a run on 2026-11-20: build/YMRL.exe was exported with
+TIME_COST_PER_STEP = 0.0 for the 5-zombie experiment, the constant was then
+set back to 0.004, and the stale build was still sitting there. A --env_path
+run at that point would have trained with the time cost silently off and
+looked completely normal doing it.
+
+Check before launching, rather than trusting memory -- if the source
+timestamp is newer than the build, re-export (PowerShell):
+
+    (Get-ChildItem -Recurse -Include *.gd,*.tscn characters,scenes,training |
+        Sort-Object LastWriteTime -Descending | Select-Object -First 1).LastWriteTime
+    (Get-Item build/YMRL.exe).LastWriteTime
+
+EXCEPTION: in-editor training (no --env_path) reads .gd files straight off
+disk, so it needs no export and cannot go stale. That is the reason to prefer
+it while iterating on rewards or scenes; you give up --n_parallel, i.e. about
+2.4x wall clock (see the SPEED section).
+
+
 --- 1. FINE-TUNE THE CURRENT BEST MODEL --------------------------------------
 
     python tools/train_sb3.py `
       --experiment_name soldier_finetune `
-      --timesteps 20000 `
+      --timesteps 60000 `
       --n_steps 256 `
       --ent_coef 0.001 `
       --linear_lr_schedule `
-      --resume_model_path=models/soldier_best_64pct.zip `
+      --resume_model_path=models/soldier_5z_tc.zip `
       --save_model_path=models/soldier_next.zip `
       --onnx_export_path=models/soldier_next.onnx
 
-This is the configuration that works: 64% kill rate at n=50, up from a 42%
-baseline. See "Training results so far" below for why each flag matters.
+No --env_path above, so this is in-editor training and needs NO export (see the
+RULE at the top). Current task: 5 zombies (Training3Solo.tscn) with
+TIME_COST_PER_STEP = 0.004. soldier_5z_tc is the best model on that task
+(clears the wave in 38/50); soldier_tc_timecost is the best on the older
+3-zombie task. See "Training results so far" below for the full comparison.
 
 
 --- 2. TRAIN FROM SCRATCH ----------------------------------------------------
@@ -43,7 +84,7 @@ is what stops it degrading -- see the results table below for the evidence.
 
 --- 3. EVALUATE (do this before believing any training number) ---------------
 
-    python tools/evaluate.py --model models/soldier_best_64pct.zip --episodes 50
+    python tools/evaluate.py --model models/soldier_v10_50k.zip --episodes 50
 
 50 episodes minimum. Four episodes gave 75% for a model that scores 42% at
 n=50. Seeds are fixed, so runs are comparable.
@@ -79,12 +120,103 @@ TRAINING RESULTS SO FAR (n=50, deterministic)
 ================================================================================
 
     model                        kill_rate   notes
-    models/soldier_best_64pct.zip    64%     CURRENT BEST (v9)
-    models/soldier_baseline_42pct.zip 42%    pre-fine-tune baseline (v7 40k step)
-    models/soldier_v7final_33pct.zip  33%    v7 final step (degraded from 42%)
-    models/soldier_v8_degraded.zip    12%    ent_coef 0.01 fine-tune -- FAILED
+    models/soldier_5z_tc.zip         100%     BEST on 5 zombies + time cost; clears 38/50 waves
+    models/soldier_tc_timecost.zip   100%     BEST on 3 zombies (v11 + time cost); idle 0.21->0.10
+    models/soldier_5z.zip            100%    5 zombies, NO time cost -- times out (6/50 clears)
+    models/soldier_v11.zip           100%     v11 -- loiters (idle 0.21), superseded by soldier_tc
+    models/soldier_v10_50k.zip       100%     v10 -- same kill rate, worse return
+    models/soldier_best_64pct.zip     88%     old best (v9), re-scored on soft collision
+    models/soldier_best_64pct.zip     64%     old best (v9), scored on the OLD hard collision
+    models/soldier_baseline_42pct.zip 42%     pre-fine-tune baseline (v7 40k step)
+    models/soldier_v7final_33pct.zip  33%     v7 final step (degraded from 42%)
+    models/soldier_v8_degraded.zip    12%     ent_coef 0.01 fine-tune -- FAILED
 
-What this established:
+At 5 zombies kill_rate (>=1 kill) is no longer informative -- read kills/ep and
+"cleared the wave" instead. The 64% row predates the soft-collision change and
+is NOT comparable to the rows above it. Everything else was measured on the
+current physics at n=50, deterministic, same seeds.
+
+WHICH SCENE each model was measured on: v10/v11/soldier_tc at 3 zombies (what
+Training3Solo.tscn had then), soldier_5z and soldier_5z_tc at 5 zombies. The
+scene is now set to 5 AND TIME_COST_PER_STEP is 0.004, so re-running an old
+eval now measures a different task/reward than it did originally.
+
+TIME COST vs 5 ZOMBIES: three fine-tunes, n=50
+
+    metric             v11(3z)  A: time   B: 5z   C: 5z+time
+    return_              34.68     34.49    45.32      52.89
+      (penalty-free)     34.68     ~35.7    45.32      ~54.6   <- comparable column
+    kills/ep           2.92/3    2.98/3   3.76/5     4.76/5
+    cleared the wave     46/50     48/50     6/50      38/50
+    length                 315       296      453        426   (cap ~456)
+    idle_fraction         0.21      0.10     0.02       0.01
+    attack_fraction       0.57      0.68     0.63       0.77
+    damage_taken          0.77      0.48     1.02       3.02
+    deaths/ep             0.00      0.00     0.00       0.00
+
+  A (time cost, 3 zombies): fixed the loitering it was aimed at -- idle halved,
+  attacks up, episodes 19 steps shorter, damage DOWN. Kept as the default.
+
+  B (5 zombies, no time cost): harder scene kills loitering by itself (idle
+  0.02, nothing to linger for), but it cannot convert: 3.76 of 5 kills, 44/50
+  episodes hit the 60 s cap. That was the headroom.
+
+  C (5 zombies + time cost, 60k from soldier_5z) is the win: clears the wave in
+  38/50 instead of 6/50, kills 4.76 of 5 instead of 3.76, in 27 fewer steps,
+  with attack_fraction 0.77. The price is explicit and intended -- damage taken
+  1.02 -> 3.02, still zero deaths. That is the time cost buying engagement, on
+  a scene where engagement was the binding constraint.
+
+  Read C's damage number as the design intent, not a regression: A and C differ
+  because on 3 zombies there is spare time to spend, on 5 there is not.
+
+3 vs 5 ZOMBIES
+  Training3Solo.tscn overrides zombies_per_episode; main_3.gd defaults to 5.
+  At 3 the task is saturated (kill_rate pinned at 100%, kills/ep 2.92 of 3), so
+  only the damage/time terms have room and training just trades speed for
+  safety. At 5 there is real headroom. The obs sensor already has 10 slots, so
+  5 zombies needs no shape change and old checkpoints still load.
+
+Do NOT nerf strafe/backpedal to punish circling. char3.gd sets STRAFE_SPEED =
+BACKPEDAL_SPEED = 0.75, so slowing one slows the other -- it cannot
+"incentivize retreating", it just weakens both. Retreat is already dominated: a
+wounded zombie runs at 4.0 vs the soldier's 2.25 backwards, and retreating into
+a 50x50 arena's walls is the wedge failure the soft collision fixed. The
+behaviour is legitimate kiting of the 0.4 s attack_startup freeze, and it can
+also be done with forward + turn at full speed, so a strafe nerf would be
+routed around anyway. Price time (as in A and C) if you want decisiveness.
+
+What the v10 run established:
+
+  The soft-collision change is worth more than the training. Both models scored
+  on identical physics, n=50:
+      model                    kill_rate  kills/ep  return  dmg_taken  attack_frac
+      soldier_best_64pct (v9)      88%      1.28     6.05       7.09         0.14
+      soldier_v10_50k              100%      2.92    32.28       2.36         0.49
+  So 64% -> 88% is the physics alone (a policy that never saw it), and
+  88% -> 100% plus kills/ep 1.28 -> 2.92 is what the 50k fine-tune added.
+  v10 also stops being passive: attack_fraction 0.14 -> 0.49 and
+  block_fraction 0.25 -> 0.10 -- the old policy spent its time blocking and
+  timing out at the 450-step cap; v10 kills all three zombies and ends via the
+  all-zombies-killed condition (mean episode length 268 vs 435).
+  Caveat: the cap is 3 zombies per episode, so kill_rate is at ceiling and
+  kills/ep has almost no room left. Further fine-tuning needs a harder scene
+  (more zombies) to show anything.
+
+  Reproduce with:
+      python tools/evaluate.py --model models/soldier_v10_50k.zip --episodes 50 \
+        --json eval_v10_50k.json
+      python tools/evaluate.py --model models/soldier_best_64pct.zip --episodes 50 \
+        --json eval_best64_soft_n50.json
+
+  Training run itself: 50,176 steps in 732 s (~68 fps), stochastic
+  success_rate 0.98, ep_rew_mean 20.5 -> 30.8. Checkpoints were written every
+  10k; the 10k-30k files have been pruned, so
+  logs/sb3/soldier_v10_50k_checkpoints/ now holds only the 40k and 50k pair
+  (the 50k one duplicates models/soldier_v10_50k.zip, which was also saved
+  after the run finished, and is the file to resume from).
+
+What earlier runs established:
 
   ent_coef is the dominant setting when fine-tuning. Two 20k runs from the
   same 42% baseline, differing ONLY in ent_coef:
@@ -183,23 +315,124 @@ Reward design
 
 
 ================================================================================
+SPEED: WHAT ACTUALLY MAKES TRAINING FASTER (measured 2026-11-20)
+================================================================================
+
+Use the exported build with 4 parallel envs. Everything else is noise:
+
+    # STEP 0, NOT OPTIONAL: re-export first if ANY .gd/.tscn changed since the
+    # last export. --env_path runs the baked build, so skipping this trains on
+    # old code with no warning. See the RULE at the top of this file.
+    python tools/export_headless.py
+
+    python tools/train_sb3.py `
+      --experiment_name soldier_v12 `
+      --env_path build/YMRL.exe --n_parallel 4 --speedup 30 --fixed_fps 2000 `
+      --timesteps 60000 --n_steps 256 --ent_coef 0.001 --linear_lr_schedule `
+      --save_checkpoint_frequency 15000 `
+      --resume_model_path=models/soldier_5z_tc.zip `
+      --save_model_path=models/soldier_v12.zip --onnx_export_path=models/soldier_v12.onnx
+
+Measured, same config, 4k-9k step runs (i7-9700K, 8 threads / 8 logical):
+
+    setup                                              env steps/s
+    in-editor, windowed, scene speed_up 10                     68   <- previous runs
+    in-editor, --headless --fixed-fps 2000, --speedup=30        79
+    ... + --device cpu                                          83
+    exported build, single env (any flags)                      50
+    exported build, --n_parallel 4                              167
+    exported build, --n_parallel 4 --speedup 30 --fixed_fps 2000 256  <- USE THIS
+    exported build, --n_parallel 6 --speedup 30 --fixed_fps 2000 218  (oversubscribed)
+
+    50k steps: measured on real runs, 12.2 min in-editor (v10) -> 5.1 min with
+    n_parallel 4 (v11), i.e. ~2.4x. The 256 steps/s above is a short-run
+    benchmark; long runs settle lower (v11 162, and 119 on 5 zombies) once
+    checkpoint writes and longer episodes are included. Do not budget from 256.
+
+The last two flags are worth 167 -> 256 in parallel mode, even though neither
+helped a single-env build. --n_parallel 4 beats 6 because 4 Godot processes +
+Python + the OS already fill 8 threads; retune if the machine changes.
+
+WHY THE EXPORT EXISTS: it does NOT make one env faster -- the exported build is
+SLOWER per env than the editor binary (50 vs 68-83). Its only real benefit is
+that godot_rl refuses --n_parallel > 1 without --env_path, so the export is
+what unlocks the 4 processes. Net effect is ~2.4x wall clock (162-256 aggregate
+vs 68-83 single), and nothing more.
+
+Training in-editor instead (no export) is a legitimate choice: it reads .gd
+files straight off disk, so the stale-build trap in the RULE at the top simply
+cannot happen -- at the cost of that 2.4x. Concrete: soldier_5z_tc (60k steps,
+5 zombies) took 18.5 min in-editor at 54-70 steps/s; at 4 parallel envs the
+same 60k was an estimated 5-7 min.
+
+Re-exporting is the price of the 2.4x. There is no third option that keeps both.
+
+What did NOT work (do not re-spend the effort):
+
+  Throttling the soft-separation shape query in char3.gd to every 2nd or 8th
+  tick: 79 / 79 / 80 fps at interval 1 / 2 / 8. The query is not the cost.
+  Reverted; the reason is recorded in char3.gd so it is not "optimised" again.
+
+  Engine.max_physics_steps_per_frame (default 8) clamps speed_up above 8, so
+  training.gd raises it to 64. Throughput did not change (52 -> 50 fps): frames
+  just get proportionally longer. Kept only so speed_up means what it says.
+
+  Passing --fixed_fps to the build (new --fixed_fps flag): no change, 50 -> 50.
+
+  --device cpu and --speedup only pay off in-editor; the exported build sits at
+  ~50 env steps/s single-env regardless. Why the build is slower than the
+  editor binary at the same speedup is UNRESOLVED -- it is not the frame cap,
+  not --fixed-fps, and not rendering (--headless). Parallelism hides it, which
+  is why it was parked rather than chased.
+
+  Not worth trying: swapping SB3's PPO for CleanRL (same algorithm; the env is
+  a Godot process behind a blocking socket, so CleanRL keeps the same
+  bottleneck) and SAC (sample-efficient in principle, but SB3's SAC rejects
+  MultiDiscrete -- see below -- and the task is at a 100% ceiling).
+
+Two tool bugs found and fixed while setting this up:
+
+  tools/export_headless.py built its template URL from GODOT_VERSION
+  ("4.7.2.stable") but GitHub release tags use a hyphen ("4.7.2-stable"), so
+  --install-templates 404'd on all 5 retries. Fixed; templates now install.
+
+  tools/train_sb3.py defaulted --speedup to 1 and unconditionally passed it to
+  the env. godot_rl forwards it to the launched build, overriding the scene's
+  speed_up=10, so every --env_path run crawled at 6 env steps/s. Now defaults
+  to None (= use the scene's value).
+
+  Note: --n_parallel is the ONLY thing that needs --env_path; in-editor runs
+  cannot be parallelised. Export needs ~1.2 GB of templates once, and
+  --export-release can be run straight from the editor binary even while the
+  editor is open (the tool's "close the editor first" guard is over-cautious
+  and also misfires on the godot-ai MCP server, whose pid-file path contains
+  "YMRL"):
+
+    GODOT_BIN=".../Godot_v4.7.2-stable_mono_win64_console.exe" `
+      ".../Godot_v4.7.2-stable_mono_win64_console.exe" --headless `
+      --path . --export-release "Headless" build/YMRL.exe
+
+
+================================================================================
 OTHER COMMANDS
 ================================================================================
 
-headless export (one-time setup, then build)
-    python tools/export_headless.py --install-templates    # ~1.2 GB, first time
+headless export
+    python tools/export_headless.py --install-templates    # ~1.2 GB, first time only
     python tools/export_headless.py                        # -> build/YMRL.exe
     python tools/export_headless.py --check                # verify prerequisites
+    # The plain export is NOT one-time: run it again after EVERY source change.
+    # See the RULE at the top of this file.
 
 train headless (no editor; also the only way to use --n_parallel > 1)
     python tools/train_sb3.py --env_path build/YMRL.exe --n_parallel 4 `
       --save_model_path=models/soldier.zip
 
 run inference with a trained model
-    python tools/train_sb3.py --resume_model_path=models/soldier_best_64pct.zip --inference
+    python tools/train_sb3.py --resume_model_path=models/soldier_v10_50k.zip --inference
 
 evaluate against a JSON report
-    python tools/evaluate.py --model models/soldier_best_64pct.zip --episodes 50 `
+    python tools/evaluate.py --model models/soldier_v10_50k.zip --episodes 50 `
       --json eval.json
 
 save a checkpoint more often (long runs; killable without losing everything)

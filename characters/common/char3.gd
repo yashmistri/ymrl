@@ -23,6 +23,38 @@ var aim:Vector3=Vector3.FORWARD
 var is_dead:bool=false
 @onready var ai: AIController3D = find_child("AI")
 
+# --- Soft separation -------------------------------------------------------
+#
+# Entity capsules do NOT collide with each other (layer 2 / layer 4 removed from
+# both bodies' collision_mask; see soldier3.tscn and zombie3.tscn). They still
+# collide with walls. Overlap is resolved here instead, by pushing bodies apart
+# with a force rather than letting the physics engine refuse the move.
+#
+# Why: hard collision between converging bodies wedged the soldier in place --
+# three zombies pressing from different angles left no free direction for
+# move_and_slide to slide into, and it moved <0.15 m instead of 3 m. A soft
+# force always produces some displacement, so an agent can push through a crowd.
+#
+# Radius is summed from both capsules: 0.5 + 0.5. Separation begins once the
+# capsules overlap and ramps up as they interpenetrate further.
+@export var separation_radius: float = 1.0
+# Push speed at full overlap, in m/s. Applied as extra velocity, not teleported.
+@export var separation_strength: float = 3.0
+# Layer bits of OTHER entities to push away from. Default = char (2) + zombie
+# (4), i.e. every entity, but never walls (1).
+@export_flags_3d_physics var separation_mask: int = 6
+
+# Extra velocity is computed per frame in compute_separation_velocity(); these
+# are reused objects so the query does not allocate every physics tick.
+var _separation_shape := SphereShape3D.new()
+var _separation_query := PhysicsShapeQueryParameters3D.new()
+
+# MEASURED (do not repeat this optimisation): throttling the query above to
+# every 2nd or every 8th tick changed throughput by 0-1% -- 79 / 79 / 80 fps at
+# interval 1 / 2 / 8 on the same build. The separation cost is NOT what caps
+# training throughput, so there is nothing to win here and the per-tick query
+# (which keeps the push exact) was restored. See docs/commands.txt.
+
 # Combat logging is rate limited: a training run at 10x speedup fires hundreds
 # of attacks per second, and an unthrottled print() floods the console and can
 # dominate frame time. Set debug_logging = true on the node to see every event.
@@ -81,7 +113,63 @@ func _physics_process(delta: float) -> void:
 	else:
 		velocity = Vector3.ZERO
 
+	# Add the separation push on top of the intended motion, then move. Walls
+	# still stop everything because they remain in collision_mask.
+	velocity += compute_separation_velocity()
 	move_and_slide()
+
+
+# Returns a velocity that pushes this body out of any overlapping entity, or
+# zero when nothing is overlapping. Bodies on layer 1 (walls) are never pushed
+# away from -- separation_mask defaults to char + zombie only.
+func compute_separation_velocity() -> Vector3:
+	if is_dead:
+		return Vector3.ZERO
+	var space := get_world_3d().direct_space_state
+	if space == null:
+		return Vector3.ZERO
+
+	# One sphere at the capsule's mid-height, radius = sum of both radii.
+	_separation_shape.radius = separation_radius
+	_separation_query.shape = _separation_shape
+	_separation_query.transform = Transform3D(Basis(), global_position)
+	_separation_query.collision_mask = separation_mask
+	_separation_query.collide_with_bodies = true
+	_separation_query.collide_with_areas = false
+	# Do not push away from ourselves.
+	_separation_query.exclude = [get_rid()]
+
+	var hits := space.intersect_shape(_separation_query, 8)
+	if hits.is_empty():
+		return Vector3.ZERO
+
+	var push := Vector3.ZERO
+	var contacts := 0
+	for hit in hits:
+		var other = hit.get("collider")
+		if other == null or not (other is Node3D):
+			continue
+		if "is_dead" in other and other.is_dead:
+			continue
+		var away: Vector3 = global_position - (other as Node3D).global_position
+		away.y = 0.0
+		var dist := away.length()
+		if dist < 0.0001:
+			# Exactly co-located: pick a deterministic direction so the pair
+			# does not sit oscillating on top of each other.
+			away = Vector3.RIGHT
+			dist = 0.0001
+		# Overlap fraction: 1 at dead centre, 0 at touching.
+		var overlap := clampf(1.0 - dist / separation_radius, 0.0, 1.0)
+		push += away.normalized() * overlap
+		contacts += 1
+
+	if contacts == 0:
+		return Vector3.ZERO
+	push /= float(contacts)
+	# Ramp with interpenetration; capped at separation_strength.
+	return push * separation_strength
+
 
 
 # Startup delay, then a ray of length attack_range.
