@@ -140,7 +140,12 @@ func _physics_process(delta: float) -> void:
 	var was_blocking := is_blocking
 	if ai.heuristic == "human":
 		
-		aim = $"../Cursor".global_position
+		# The Cursor is optional: character scenes are also opened on their own
+		# (AssetLib-style previews, the _probe_models render harness), where
+		# there is no arena to own it. Fall back to the aim already held.
+		var cursor := get_node_or_null("../Cursor") as Node3D
+		if cursor != null:
+			aim = cursor.global_position
 		move = Vector3(Input.get_axis("left", "right"), 0.0, Input.get_axis("up", "down"))
 	else:
 		# Positive forward walks toward aim. move.z is negative for that, matching W.
@@ -160,6 +165,8 @@ func _physics_process(delta: float) -> void:
 	var block_slow := (BLOCK_SPEED_SCALE if is_blocking else 1.0)
 	current_speed = speed_stat * run * attack_slow * block_slow
 	_shield.visible = is_blocking
+	if is_blocking:
+		_update_shield_pose()
 	if is_blocking and not was_blocking:
 		block_started.emit()
 	# attack_started is emitted from attack() itself, not here: super.attack()
@@ -230,7 +237,22 @@ func _create_shield() -> void:
 	_shield.rotation.x = PI / 2.0
 	_shield.position = Vector3(0.0, 0.25, -0.78)
 	_shield.visible = false
-	$Mesh.add_child(_shield)
+	# Parented to the character rather than $Mesh: the body is a skinned mesh
+	# whose orientation is driven by the skeleton, so a child of $Mesh would
+	# never turn. _update_shield_pose() places it in front of `aim` instead.
+	add_child(_shield)
+
+
+# Puts the shield 0.78 m ahead of the character, along `aim`, matching the
+# direction the block arc test uses. Only meaningful while blocking.
+func _update_shield_pose() -> void:
+	var dir := aim - global_position
+	dir.y = 0.0
+	if dir.length_squared() < 0.000001:
+		return
+	dir = dir.normalized()
+	_shield.global_position = global_position + dir * 0.78 + Vector3.UP * 1.05
+	_shield.global_basis = Basis.looking_at(dir, Vector3.UP)
 
 func _attack_is_blocked(attacker: Node3D) -> bool:
 	if not is_blocking or attacker == null:
@@ -239,11 +261,15 @@ func _attack_is_blocked(attacker: Node3D) -> bool:
 	to_attacker.y = 0.0
 	if to_attacker.length_squared() < 0.000001:
 		return true
-	var forward: Vector3 = -$Mesh.global_basis.z
-	forward.y = 0.0
-	if forward.length_squared() < 0.000001:
+	# Facing comes from `aim`, not from $Mesh: the body is a skinned mesh whose
+	# orientation is driven by the skeleton (CharacterAnimator yaws the root
+	# bones), so $Mesh.global_basis never changes and reading it would make
+	# blocking work in every direction.
+	var face := aim - global_position
+	face.y = 0.0
+	if face.length_squared() < 0.000001:
 		return false
-	var facing_dot := forward.normalized().dot(to_attacker.normalized())
+	var facing_dot := face.normalized().dot(to_attacker.normalized())
 	return facing_dot >= cos(deg_to_rad(BLOCK_ARC_DEGREES * 0.5))
 
 func _spend_stamina(amount: float) -> void:

@@ -284,9 +284,20 @@ func get_obs() -> Dictionary:
 	_update_approach_reward(entity_obs)
 	_sample_step_stats()
 
-	# The body stays unrotated. Facing is the mesh yaw, wrapped to -1..1.
-	var facing: MeshInstance3D = $"../Mesh"
-	var yaw: float = wrapf(facing.global_rotation.y, -PI, PI) / PI
+	# Facing, wrapped to -1..1. This is an OBSERVATION the trained policies
+	# consume (float 5 of 103), so its meaning must not drift: it used to read
+	# the yaw of $Mesh, which char3.gd kept pointed at `aim` via look_at(aim).
+	# The body is now a skinned mesh turned by the skeleton, so $Mesh never
+	# rotates and its yaw would be a constant -- that would silently feed every
+	# checkpoint a dead input. Derive the same value from `aim` instead.
+	var to_aim: Vector3 = char.aim - char.global_position
+	to_aim.y = 0.0
+	var yaw := 0.0
+	if to_aim.length_squared() > 0.000001:
+		# look_at makes -Z point at the target, and its yaw is atan2(-x, -z).
+		# Verified against the old look_at(aim) behaviour for all 8 compass-ish
+		# directions; the naive atan2(x, -z) has the wrong sign on every axis.
+		yaw = wrapf(atan2(-to_aim.x, -to_aim.z), -PI, PI) / PI
 	# Read the maxima from the soldier rather than hardcoding them, so tuning
 	# health or stamina on the character cannot silently push observations
 	# outside 0..1.

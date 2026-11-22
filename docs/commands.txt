@@ -116,6 +116,51 @@ connection. Confirm current_scene is training/Training3Solo.tscn first.
 
 
 ================================================================================
+CRITICAL: WHAT CAN BE RUN WITHOUT THE TRAINING SERVER
+================================================================================
+
+The training scene needs a few lines of Python, NOT a special server program.
+`tools/train_sb3.py` IS the server: it binds port 11008, waits for Godot, and
+launches `build/YMRL.exe` itself. So you can drive the whole loop from one
+shell, with no editor and no manual PLAY:
+
+    python tools/train_sb3.py --env_path build/YMRL.exe --n_parallel 1 `
+      --timesteps 512 --n_steps 256 --resume_model_path=models/soldier_5z_tc.zip
+
+It prints "waiting for remote GODOT connection on port 11008", then "connection
+established", then rollout stats. Verified working on 2026-11-21.
+
+What CANNOT work is launching the training scene by itself with nothing
+listening -- `Training3Solo.tscn`'s Sync node retries the connection 30 times
+and then falls back to human controls, so `godot --path .` on that scene looks
+like a hang. Only reach for that path when a trainer is already waiting (the
+ORDER OF OPERATIONS section above).
+
+To LOOK at the game (models, HUD, lighting, camera) without any trainer, run the
+plain arena scene, which has no Sync node:
+
+    godot --path . res://scenes/3d/main3.tscn
+
+main3 defaults to 5 zombies; the training scene overrides the count.
+
+ABOUT GPU (measured 2026-11-21 on this machine): an NVIDIA Quadro T1000 (4 GB)
+is present. The venv originally had torch "+cpu", which silently disabled CUDA;
+pyproject.toml now pins the cu128 index, giving torch 2.9.1+cu128. Check with:
+
+    python -c "import torch; print(torch.__version__, torch.cuda.is_available())"
+
+Do NOT use --n_parallel 1 with CUDA: enqueuing tiny tensors every env step costs
+more than the CPU computes, so one env on GPU is SLOWER than CPU
+(44-48 fps vs 63-65). Parallel envs amortise that overhead:
+
+    n_parallel 1  CPU 63-65 fps ... GPU 44-48 fps   (GPU loses)
+    n_parallel 2  GPU 76-81 fps
+    n_parallel 4  GPU 119-127 fps   <- USE THIS
+
+50k steps at ~120 fps is roughly 7 minutes.
+
+
+================================================================================
 TRAINING RESULTS SO FAR (n=50, deterministic)
 ================================================================================
 

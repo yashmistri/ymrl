@@ -84,17 +84,18 @@ func _physics_process(delta: float) -> void:
 		return
 	
 	#move = move.normalized()
-	var mesh: MeshInstance3D = $Mesh
 
 	# aim is a global point (cursor hit, target.global_position).
 	var forward := aim - global_position
 	forward.y = 0.0
 	if forward.length_squared() > 0.000001:
 		forward = forward.normalized()
-		# look_at points the mesh's -Z at this point, so facing matches forward.
-		mesh.look_at(global_position + forward)
+		# Facing is applied to the RIG, not to $Mesh. The character body is a
+		# skinned mesh driven by Skeleton3D, so rotating the MeshInstance leaves
+		# it visibly unchanged, and doing both would double the turn. The
+		# CharacterAnimator reads `aim` and yaws the skeleton's root bones.
 	else:
-		forward = -mesh.global_basis.z
+		forward = -global_basis.z
 		forward.y = 0.0
 		if forward.length_squared() > 0.000001:
 			forward = forward.normalized()
@@ -193,10 +194,9 @@ func attack():
 		return
 	is_attacking = false
 
-	# The body is not rotated toward aim; only the mesh is. RayCast3D.target_position
-	# is local to the ray. Normalizing a world position aims from the world origin,
-	# so the ray hits only when this body happens to stand on that line.
-	# Cast from here toward the aim captured at attack time.
+	# The body is not rotated toward aim; the skeleton's root bones are, by
+	# CharacterAnimator. RayCast3D.target_position is local to the ray, so the
+	# ray is aimed from this body toward the aim captured at attack time.
 	var to_target := attack_aim - global_position
 	var ray: RayCast3D = $ray
 	if to_target.length_squared() > 0.000001:

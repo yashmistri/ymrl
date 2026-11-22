@@ -1,5 +1,9 @@
 extends Node3D
 
+## The Background/Fill QuadMeshes are drawn with no_depth_test, so the bar stays
+## readable in front of the character: the quads sit between the camera and the
+## body and would otherwise be occluded by the armour they belong to.
+
 @onready var fill: MeshInstance3D = $Fill
 
 var bar_width: float
