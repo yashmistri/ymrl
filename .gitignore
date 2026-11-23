@@ -6,3 +6,9 @@
 /logs/
 /build/
 /models/*.onnx
+/demos/
+*.npz
+*.bin
+*.demo
+*.demo.json
+

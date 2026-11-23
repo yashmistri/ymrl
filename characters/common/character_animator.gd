@@ -120,28 +120,9 @@ const RIG_FORWARD_FLIP := 0.0
 
 
 func _face_aim() -> void:
-	if _body.get("is_dead"):
-		return
-	var skeleton := _skeleton
-	if skeleton == null:
-		return
-	var aim: Vector3 = _body.get("aim")
-	var to_aim := aim - _body.global_position
-	to_aim.y = 0.0
-	if to_aim.length_squared() < 0.000001:
-		return
-	# look_at/ORIENTATION: -Z forward means the yaw that aims -Z at the target is
-	# atan2(-x, -z). Verified against the old mesh.look_at() behaviour (see the
-	# yaw probe); atan2(x, -z) silently mirrors left/right.
-	var target_yaw := atan2(-to_aim.x, -to_aim.z) + RIG_FORWARD_FLIP
-	# Rotating the root bends the whole body, including the feet, so this snaps
-	# to the target yaw each frame rather than easing toward it: the AI can
-	# reverse its aim direction from one decision step to the next, and a slow
-	# turn would look like the character skating in a circle.
-	for bone in _root_bones:
-		var rest := skeleton.get_bone_rest(bone)
-		var rest_rot := rest.basis.get_rotation_quaternion()
-		skeleton.set_bone_pose_rotation(bone, Quaternion(Vector3.UP, target_yaw) * rest_rot)
+	# Facing is applied to the CharacterBody3D node in Char3._physics_process(),
+	# which turns the entire body (skeleton, meshes, animations, helmet, outline).
+	pass
 
 
 # Dominant axis wins; ties go to forward/back so walking reads before strafing.

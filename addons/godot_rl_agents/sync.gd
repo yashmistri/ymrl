@@ -485,10 +485,14 @@ func connect_to_server():
 
 
 func _get_args():
-	print("getting command line arguments")
 	var arguments = {}
-	for argument in OS.get_cmdline_args():
-		print(argument)
+	var cmdline_args = OS.get_cmdline_args()
+	var is_verbose = "--verbose" in cmdline_args
+	if is_verbose:
+		print("getting command line arguments")
+	for argument in cmdline_args:
+		if is_verbose:
+			print(argument)
 		if argument.find("=") > -1:
 			var key_value = argument.split("=")
 			arguments[key_value[0].lstrip("--")] = key_value[1]
@@ -501,7 +505,8 @@ func _get_args():
 
 
 func _get_speedup():
-	print(args)
+	if "--verbose" in OS.get_cmdline_args():
+		print(args)
 	return args.get("speedup", str(speed_up)).to_float()
 
 

@@ -24,11 +24,12 @@ class_name EntitySensor3D
 ##   6  health / max_health    0 = dead, 1 = full
 ##   7  is_attacking           0 or 1
 ##   8  is_visible             0 = remembered only, 1 = in range this frame
+##   9  is_stunned             0 or 1 (allows Strikers to target & combo)
 ##
 ## Empty slots are all zeros, so "no enemy" is distinguishable from "enemy at
 ## distance 0" (which would have a 1 in slot 8).
 
-const SLOT_SIZE := 9
+const SLOT_SIZE := 10
 const MAX_SPEED := 10.0
 
 ## How many entities to track. Beyond this, the nearest are kept.
@@ -46,6 +47,7 @@ const MAX_SPEED := 10.0
 ## Entity -> slot index. Preserved across frames for slot stability.
 var _slot_of: Dictionary = {}
 var _slots: Array = []
+var _last_refresh_frame: int = -1
 
 
 func _ready() -> void:
@@ -75,6 +77,7 @@ func get_observation() -> Array:
 ## Used by the soldier to snap its aim on attack, so the policy does not have
 ## to discover incremental turning in order to land a hit.
 func nearest_target() -> Node3D:
+	_refresh_slots()
 	var best: Node3D = null
 	var best_dist := INF
 	for i in max_slots:
@@ -83,7 +86,47 @@ func nearest_target() -> Node3D:
 			continue
 		if "is_dead" in entity and entity.is_dead:
 			continue
-		var d := _distance_to(entity)
+		var d: float = _distance_to(entity)
+		if d > max_range or d >= best_dist:
+			continue
+		best_dist = d
+		best = entity
+	return best
+
+## Nearest stunned target for Striker execution combos.
+func nearest_stunned_target() -> Node3D:
+	_refresh_slots()
+	var best: Node3D = null
+	var best_dist := INF
+	for i in max_slots:
+		var entity = _slots[i]
+		if entity == null or not is_instance_valid(entity):
+			continue
+		if "is_dead" in entity and entity.is_dead:
+			continue
+		if not ("is_stunned" in entity and entity.is_stunned):
+			continue
+		var d: float = _distance_to(entity)
+		if d > max_range or d >= best_dist:
+			continue
+		best_dist = d
+		best = entity
+	return best
+
+## Nearest unstunned target for Tank crowd control targeting.
+func nearest_unstunned_target() -> Node3D:
+	_refresh_slots()
+	var best: Node3D = null
+	var best_dist := INF
+	for i in max_slots:
+		var entity = _slots[i]
+		if entity == null or not is_instance_valid(entity):
+			continue
+		if "is_dead" in entity and entity.is_dead:
+			continue
+		if "is_stunned" in entity and entity.is_stunned:
+			continue
+		var d: float = _distance_to(entity)
 		if d > max_range or d >= best_dist:
 			continue
 		best_dist = d
@@ -93,6 +136,11 @@ func nearest_target() -> Node3D:
 
 
 func _refresh_slots() -> void:
+	var cur_frame := Engine.get_physics_frames()
+	if _last_refresh_frame == cur_frame:
+		return
+	_last_refresh_frame = cur_frame
+
 	var candidates := _collect_candidates()
 	var in_range := {}
 	for entity in candidates:
@@ -164,6 +212,7 @@ func _slot_values(entity: Node3D) -> Array:
 
 	var attacking: float = 1.0 if ("is_attacking" in entity and entity.is_attacking) else 0.0
 	var visible_now: float = 1.0 if distance <= max_range else 0.0
+	var stunned: float = 1.0 if ("is_stunned" in entity and entity.is_stunned) else 0.0
 
 	return [
 		clampf(local.x / max_range, -1.0, 1.0),
@@ -175,4 +224,5 @@ func _slot_values(entity: Node3D) -> Array:
 		health,
 		attacking,
 		visible_now,
+		stunned,
 	]

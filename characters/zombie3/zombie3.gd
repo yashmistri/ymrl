@@ -26,21 +26,60 @@ const CONTACT_DISTANCE:float = 1.1
 
 var requested_move:Vector2
 var is_running:bool=false
+var is_stunned:bool=false
+var _stun_timer:float=0.0
+var _stun_indicator:MeshInstance3D
 var spawn_pos:Vector3
 var target:Node3D
+
 func _ready():
 	spawn_pos = global_position
 	# Lets EntitySensor3D find zombies without walking the scene tree.
 	add_to_group("enemy")
+	_create_stun_indicator()
 	if ai:
 		ai.init(self)
 	$hit.visible = false
 	super._ready()
 
+func _create_stun_indicator() -> void:
+	_stun_indicator = MeshInstance3D.new()
+	_stun_indicator.name = "StunIndicator"
+	var torus := TorusMesh.new()
+	torus.inner_radius = 0.25
+	torus.outer_radius = 0.35
+	_stun_indicator.mesh = torus
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = Color(1.0, 0.9, 0.2, 0.9) # Bright yellow stun halo
+	_stun_indicator.material_override = mat
+	_stun_indicator.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_stun_indicator.position = Vector3(0.0, 2.05, 0.0) # Floating just over head
+	_stun_indicator.visible = false
+	add_child(_stun_indicator)
+
+func stun(duration: float) -> void:
+	if is_dead:
+		return
+	is_stunned = true
+	_stun_timer = maxf(_stun_timer, duration)
+	is_attacking = false
+	if _stun_indicator:
+		_stun_indicator.visible = true
+
+func apply_knockback(force: Vector3) -> void:
+	if is_dead:
+		return
+	velocity += force
+
 func respawn():
 	global_position = spawn_pos
 	current_health = max_health
 	is_dead = false
+	is_stunned = false
+	_stun_timer = 0.0
+	if _stun_indicator:
+		_stun_indicator.visible = false
 	ai.done=false
 	visible = true
 
@@ -48,7 +87,30 @@ func respawn():
 func _physics_process(delta: float) -> void:
 	if is_dead:
 		return
+
+	if _stun_timer > 0.0:
+		_stun_timer -= delta
+		if _stun_timer <= 0.0:
+			is_stunned = false
+			if _stun_indicator:
+				_stun_indicator.visible = false
+		current_speed = 0.0
+		super._physics_process(delta)
+		return
+
 	move= Vector3.ZERO
+	if target == null or ("is_dead" in target and target.is_dead):
+		var soldiers := get_tree().get_nodes_in_group("soldier")
+		var nearest: Node3D = null
+		var min_dist: float = 1e9
+		for s in soldiers:
+			if s is Node3D and ("is_dead" not in s or not s.is_dead):
+				var d: float = global_position.distance_to(s.global_position)
+				if d < min_dist:
+					min_dist = d
+					nearest = s
+		target = nearest
+
 	# Commit to the attack: stop moving during the wind-up so backing off can
 	# actually escape it. Without this the zombie keeps closing at 2.0 while
 	# winding up, which is faster than a backpedalling soldier (1.88), so the
@@ -79,7 +141,8 @@ func _physics_process(delta: float) -> void:
 
 func take_damage(damage:float, attacker: Node3D = null) -> Dictionary:
 	var info: Dictionary = super.take_damage(damage, attacker)
-	if info["is_kill"] and attacker == target:
+	var is_soldier_attacker = attacker and (attacker == target or attacker.is_in_group("soldier"))
+	if info["is_kill"] and is_soldier_attacker:
 		var arena: Node = get_parent()
 		if arena and arena.has_method("zombie_killed_by_soldier"):
 			arena.zombie_killed_by_soldier()

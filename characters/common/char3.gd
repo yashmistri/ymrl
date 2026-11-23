@@ -19,6 +19,7 @@ var attack_startup:float=0.4
 var can_attack:bool=true
 var is_attacking:bool=false
 var aim:Vector3=Vector3.FORWARD
+var last_hit_target: Node3D = null
 
 var is_dead:bool=false
 @onready var ai: AIController3D = find_child("AI")
@@ -65,8 +66,7 @@ var _debug_log_last_msec: Dictionary = {}
 # Prints at most once per DEBUG_LOG_INTERVAL_MSEC per `tag`. With
 # debug_logging on, every call prints.
 func debug_log(tag: String, message: String) -> void:
-	if debug_logging:
-		print(message)
+	if not debug_logging:
 		return
 	var now := Time.get_ticks_msec()
 	var last: int = _debug_log_last_msec.get(tag, -DEBUG_LOG_INTERVAL_MSEC)
@@ -76,6 +76,8 @@ func debug_log(tag: String, message: String) -> void:
 	print(message)
 
 func _ready():
+	if "--debug" in OS.get_cmdline_args() or "--debug-logging" in OS.get_cmdline_args():
+		debug_logging = true
 	current_speed = speed_stat
 	current_health = max_health
 
@@ -90,10 +92,7 @@ func _physics_process(delta: float) -> void:
 	forward.y = 0.0
 	if forward.length_squared() > 0.000001:
 		forward = forward.normalized()
-		# Facing is applied to the RIG, not to $Mesh. The character body is a
-		# skinned mesh driven by Skeleton3D, so rotating the MeshInstance leaves
-		# it visibly unchanged, and doing both would double the turn. The
-		# CharacterAnimator reads `aim` and yaws the skeleton's root bones.
+		rotation.y = atan2(-forward.x, -forward.z) + PI
 	else:
 		forward = -global_basis.z
 		forward.y = 0.0
@@ -204,7 +203,9 @@ func attack():
 		ray.force_raycast_update()
 		var col = ray.get_collider()
 		if col:
-			var dmg_info: Dictionary = col.take_damage(damage, self)
+			last_hit_target = col
+			var final_damage := get_attack_damage(col)
+			var dmg_info: Dictionary = col.take_damage(final_damage, self)
 			var percent_damage: float = dmg_info["percent_damage"]
 			var is_kill: bool = dmg_info["is_kill"]
 			_on_attack_landed(percent_damage, is_kill)
@@ -212,6 +213,9 @@ func attack():
 	can_attack = false
 	start_attack_cd()
 	return
+
+func get_attack_damage(_target: Node3D) -> float:
+	return damage
 
 func start_attack_cd():
 	await get_tree().create_timer(attack_cd).timeout

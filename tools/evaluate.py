@@ -61,6 +61,12 @@ METRIC_KEYS = (
     "blocks_per_engagement",
     "damage_blocked",
     "steps_to_first_hit",
+    # squad & abilities
+    "stuns",
+    "heals",
+    "executions",
+    "team_kills",
+    "team_deaths",
     # behaviour distribution
     "idle_fraction",
     "full_stamina_fraction",
@@ -161,6 +167,7 @@ def run_episodes(
     max_steps: int,
     deterministic: bool,
     verbose_info: bool = False,
+    quiet: bool = False,
 ) -> Summary:
     summary = Summary()
     obs = env.reset()
@@ -203,12 +210,13 @@ def run_episodes(
                 reported_l = int(episode_info["l"])
                 counted = current[index].length
                 current[index].length = counted
-                print(
-                    f"    [episode {len(summary.episodes) + 1}] "
-                    f"decision_steps={counted} reported_l={reported_l} "
-                    f"ratio={reported_l / max(counted, 1):.2f} "
-                    f"r={current[index].return_:.2f}"
-                )
+                if not quiet:
+                    print(
+                        f"    [episode {len(summary.episodes) + 1}] "
+                        f"decision_steps={counted} reported_l={reported_l} "
+                        f"ratio={reported_l / max(counted, 1):.2f} "
+                        f"r={current[index].return_:.2f}"
+                    )
                 # Re-read counters after the final info so the closing step's
                 # values are included.
                 for key in EXTRA_KEYS:
@@ -280,6 +288,11 @@ def main() -> int:
     parser.add_argument("--viz", action="store_true", help="Show the Godot window (requires --env_path).")
     parser.add_argument("--json", default=None, type=str, help="Write the full report to this JSON path.")
     parser.add_argument(
+        "--quiet",
+        action="store_true",
+        help="Suppress per-episode progress messages and print only the final summary report.",
+    )
+    parser.add_argument(
         "--verbose-info",
         action="store_true",
         help="Print the raw info dict at each episode boundary (diagnostics).",
@@ -297,6 +310,7 @@ def main() -> int:
         summary = run_episodes(
             model, env, args.episodes, args.max_steps, not args.stochastic,
             verbose_info=args.verbose_info,
+            quiet=args.quiet,
         )
         stats = summary.stats()
         print_report(stats, str(model_path))

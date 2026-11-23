@@ -189,6 +189,12 @@ parser.add_argument(
     type=float,
     help="The clipping range (default 0.2). This limits the policy changes per update",
 )
+parser.add_argument(
+    "--quiet",
+    action="store_true",
+    default=False,
+    help="Suppress intermediate SB3 rollout tables to save terminal output and context tokens.",
+)
 
 args, extras = parser.parse_known_args()
 
@@ -363,7 +369,7 @@ env = VecMonitor(env)
 #
 # Failing here with an explicit message is much better than letting PPO.load
 # die on a tensor-shape mismatch, which reads like a corrupted checkpoint.
-EXPECTED_OBS_SIZE = 103
+EXPECTED_OBS_SIZE = 145
 # Alphabetical: this is the order Godot's JSON.stringify emits, which is what
 # the trainer builds MultiDiscrete from. soldier3_ai.gd::get_action_space()
 # declares its keys in the same order so Godot's slicing order matches.
@@ -448,7 +454,7 @@ if args.resume_model_path is None:
         # over 216 actions) to ~0.9 within 25k steps, locking the policy into a
         # circling local optimum before it found the zombie.
         ent_coef=args.ent_coef,
-        verbose=2,
+        verbose=0 if args.quiet else 1,
         n_steps=args.n_steps,
         n_epochs=20,
         # Kill reward arrives at the end of a long approach. At gamma=0.99 with

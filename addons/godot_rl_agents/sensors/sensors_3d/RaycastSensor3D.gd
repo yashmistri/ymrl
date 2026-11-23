@@ -91,7 +91,7 @@ func _ready() -> void:
 
 
 func _spawn_nodes():
-	print("spawning nodes")
+	# print("spawning nodes")
 	for ray in get_children():
 		ray.queue_free()
 	if geo:

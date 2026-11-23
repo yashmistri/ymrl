@@ -11,6 +11,7 @@
 [ext_resource type="Texture2D" path="res://assets/Paladin J Nordstrom_2.png" id="9_8r08w"]
 [ext_resource type="Shader" path="res://characters/soldier3/outline.gdshader" id="10_fldi8"]
 [ext_resource type="Script" path="res://characters/common/character_animator.gd" id="11_xsxuf"]
+[ext_resource type="Script" path="res://characters/common/ally_sensor_3d.gd" id="12_allysens"]
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_hlpfh"]
 
@@ -549,6 +550,9 @@ target_position = Vector3(11.480503, 0, -27.716387)
 
 [node name="EntitySensor" type="Node3D" parent="." unique_id=688374580]
 script = ExtResource("6_entsens")
+
+[node name="AllySensor" type="Node3D" parent="." unique_id=688374581]
+script = ExtResource("12_allysens")
 
 [node name="AI" type="Node3D" parent="." unique_id=50549052]
 script = ExtResource("2_lbr5k")

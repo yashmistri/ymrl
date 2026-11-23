@@ -3,6 +3,7 @@ extends Node3D
 @onready var cam:Camera3D = $Camera3D
 @onready var zombie:PackedScene = load("res://characters/zombie3/zombie3.tscn")
 @export var peaceful:bool=false
+@export var squad_bots: bool = false
 @export var zombies_per_episode:int = 5
 # Spawn-distance curriculum. Zombies appear at a uniformly random distance in
 # [min_spawn_distance, max_spawn_distance] from the soldier, in metres, instead
@@ -28,8 +29,7 @@ var _debug_log_last_msec: Dictionary = {}
 # Prints at most once per DEBUG_LOG_INTERVAL_MSEC per `tag`. With
 # debug_logging on, every call prints.
 func _debug_log(tag: String, message: String) -> void:
-	if debug_logging:
-		print(message)
+	if not debug_logging:
 		return
 	var now := Time.get_ticks_msec()
 	var last: int = _debug_log_last_msec.get(tag, -DEBUG_LOG_INTERVAL_MSEC)
@@ -39,6 +39,19 @@ func _debug_log(tag: String, message: String) -> void:
 	print(message)
 
 func _ready():
+	if "--debug" in OS.get_cmdline_args() or "--debug-logging" in OS.get_cmdline_args():
+		debug_logging = true
+	if squad_bots:
+		for s in find_children("Soldier*"):
+			if "is_bot" in s:
+				s.is_bot = true
+			var a = s.get_node_or_null("AI")
+			if a:
+				a.is_bot = true
+				a.heuristic = "bot"
+		var cursor_node := get_node_or_null("Cursor") as Node3D
+		if cursor_node:
+			cursor_node.visible = false
 	spawn()
 	if zombies_spawned < zombies_per_episode:
 		$SpawnTimer.start()
@@ -57,7 +70,15 @@ func _connect_soldiers() -> void:
 			s.died.connect(_on_soldier_died)
 
 func _on_soldier_died() -> void:
-	_end_episode()
+	if _living_soldier_count() == 0:
+		_end_episode()
+
+func _living_soldier_count() -> int:
+	var count := 0
+	for s in find_children("Soldier*"):
+		if not s.is_queued_for_deletion() and not s.is_dead:
+			count += 1
+	return count
 
 # Marks the episode done so the Sync node reports it to SB3, then resets the
 # arena. `done` must be set before reset() clears the agent's episode counters,
@@ -81,11 +102,19 @@ func reset():
 	for s in find_children("Soldier*"):
 		if s.has_method("respawn"):
 			s.respawn()
+		if squad_bots:
+			if "is_bot" in s:
+				s.is_bot = true
+			var a = s.get_node_or_null("AI")
+			if a:
+				a.is_bot = true
+				a.heuristic = "bot"
 		# The agent's per-episode counters are NOT cleared here. The Sync node
 		# clears them via set_done_false() after reporting the episode to SB3;
 		# clearing them now would report a zero-return episode.
 	for z in find_children("Zombie*", "", true, false):
-		z.die()
+		if z.has_method("die"):
+			z.die()
 	# die() queue_frees, so the zombies are still children this frame. Drop the
 	# count so a kill landing mid-teardown cannot re-enter reset().
 	_resetting = false
@@ -109,13 +138,17 @@ func zombie_killed_by_soldier() -> void:
 func _living_zombie_count() -> int:
 	var count := 0
 	for z in find_children("Zombie*", "", true, false):
+		if not ("is_dead" in z):
+			continue
 		if z.is_queued_for_deletion() or z.is_dead:
 			continue
 		count += 1
 	return count
 
 func _physics_process(delta: float) -> void:
-	$Cursor.position = get_cursor_position()
+	var cursor: Node3D = get_node_or_null("Cursor") as Node3D
+	if cursor:
+		cursor.position = get_cursor_position()
 	#print($Cursor.position)
 
 func get_cursor_position() -> Vector3:
@@ -146,7 +179,12 @@ func spawn():
 	# which pushes zombies outside the walls in the translated Main3 clones.
 	add_child(z, true)
 	z.global_position = _pick_spawn_position()
-	z.target = $Soldier
+	var s_node: Node3D = get_node_or_null("Soldier") as Node3D
+	if not s_node:
+		var s_list := find_children("Soldier*")
+		if not s_list.is_empty() and s_list[0] is Node3D:
+			s_node = s_list[0] as Node3D
+	z.target = s_node
 	z.name = "Zombie"
 	zombies_spawned += 1
 	if zombies_spawned >= zombies_per_episode:
@@ -156,7 +194,11 @@ func spawn():
 # arena. Distances are sampled as sqrt to keep the distribution uniform over
 # area rather than biased toward the inner radius.
 func _pick_spawn_position() -> Vector3:
-	var soldier := $Soldier as Node3D
+	var soldier := get_node_or_null("Soldier") as Node3D
+	if not soldier:
+		var s_list := find_children("Soldier*")
+		if not s_list.is_empty() and s_list[0] is Node3D:
+			soldier = s_list[0] as Node3D
 	var origin := soldier.global_position if soldier else global_position
 	var low := minf(min_spawn_distance, max_spawn_distance)
 	var high := maxf(min_spawn_distance, max_spawn_distance)

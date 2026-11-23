@@ -165,8 +165,10 @@ TRAINING RESULTS SO FAR (n=50, deterministic)
 ================================================================================
 
     model                        kill_rate   notes
-    models/soldier_5z_tc.zip         100%     BEST on 5 zombies + time cost; clears 38/50 waves
-    models/soldier_tc_timecost.zip   100%     BEST on 3 zombies (v11 + time cost); idle 0.21->0.10
+    models/soldier_6z_d8_90s_50k.zip 100%   BEST on 6 zombies (90s cap); clears 10/50 waves, 3.92 kills/ep
+    models/soldier_6z_d8_50k.zip     100%   6 zombies, 60s cap; 3.18 kills/ep, capped at 4 kills (0/50 clears)
+    models/soldier_5z_tc.zip         100%    BEST on 5 zombies + time cost; clears 38/50 waves
+    models/soldier_tc_timecost.zip   100%    BEST on 3 zombies (v11 + time cost); idle 0.21->0.10
     models/soldier_5z.zip            100%    5 zombies, NO time cost -- times out (6/50 clears)
     models/soldier_v11.zip           100%     v11 -- loiters (idle 0.21), superseded by soldier_tc
     models/soldier_v10_50k.zip       100%     v10 -- same kill rate, worse return
