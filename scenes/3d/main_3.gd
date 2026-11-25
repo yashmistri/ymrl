@@ -3,7 +3,9 @@ extends Node3D
 @onready var cam:Camera3D = $Camera3D
 @onready var zombie:PackedScene = load("res://characters/zombie3/zombie3.tscn")
 @export var peaceful:bool=false
-@export var squad_bots: bool = false
+enum SquadControlMode { HEURISTIC_BOTS, NEURAL_NETWORK, PLAYER_CONTROL, TRAINING }
+@export var squad_mode: SquadControlMode = SquadControlMode.HEURISTIC_BOTS
+@export var squad_bots: bool = true
 @export var zombies_per_episode:int = 5
 # Spawn-distance curriculum. Zombies appear at a uniformly random distance in
 # [min_spawn_distance, max_spawn_distance] from the soldier, in metres, instead
@@ -41,17 +43,77 @@ func _debug_log(tag: String, message: String) -> void:
 func _ready():
 	if "--debug" in OS.get_cmdline_args() or "--debug-logging" in OS.get_cmdline_args():
 		debug_logging = true
-	if squad_bots:
-		for s in find_children("Soldier*"):
-			if "is_bot" in s:
-				s.is_bot = true
-			var a = s.get_node_or_null("AI")
-			if a:
-				a.is_bot = true
-				a.heuristic = "bot"
-		var cursor_node := get_node_or_null("Cursor") as Node3D
-		if cursor_node:
-			cursor_node.visible = false
+	if "--training" in OS.get_cmdline_args() or "--train" in OS.get_cmdline_args():
+		squad_mode = SquadControlMode.TRAINING
+	elif "--nn" in OS.get_cmdline_args() or "--onnx" in OS.get_cmdline_args():
+		squad_mode = SquadControlMode.NEURAL_NETWORK
+	elif "--bot" in OS.get_cmdline_args() or "--bots" in OS.get_cmdline_args():
+		squad_mode = SquadControlMode.HEURISTIC_BOTS
+	elif "--human" in OS.get_cmdline_args():
+		squad_mode = SquadControlMode.PLAYER_CONTROL
+
+	_apply_control_modes()
+	spawn()
+	if zombies_spawned < zombies_per_episode:
+		$SpawnTimer.start()
+	_connect_soldiers()
+	$EpisodeTimer.start()
+
+func _apply_control_modes() -> void:
+	match squad_mode:
+		SquadControlMode.TRAINING:
+			for s in find_children("Soldier*"):
+				if "is_bot" in s:
+					s.is_bot = false
+				if "use_nn" in s:
+					s.use_nn = false
+				var a = s.get_node_or_null("AI")
+				if a:
+					a.policy_source = a.PolicySource.HUMAN
+					a.control_mode = a.ControlModes.TRAINING
+					a.is_bot = false
+					a.heuristic = "human"
+					if not a.is_in_group("AGENT"):
+						a.add_to_group("AGENT")
+			var cursor_node := get_node_or_null("Cursor") as Node3D
+			if cursor_node:
+				cursor_node.visible = false
+		SquadControlMode.NEURAL_NETWORK:
+			for s in find_children("Soldier*"):
+				if "use_nn" in s:
+					s.use_nn = true
+				var a = s.get_node_or_null("AI")
+				if a:
+					a.policy_source = a.PolicySource.NEURAL_NETWORK
+					a.control_mode = a.ControlModes.HUMAN
+			var cursor_node := get_node_or_null("Cursor") as Node3D
+			if cursor_node:
+				cursor_node.visible = false
+		SquadControlMode.HEURISTIC_BOTS:
+			for s in find_children("Soldier*"):
+				if "is_bot" in s:
+					s.is_bot = true
+				if "use_nn" in s:
+					s.use_nn = false
+				var a = s.get_node_or_null("AI")
+				if a:
+					a.policy_source = a.PolicySource.BOT_HEURISTIC
+					a.is_bot = true
+					a.heuristic = "bot"
+			var cursor_node := get_node_or_null("Cursor") as Node3D
+			if cursor_node:
+				cursor_node.visible = false
+		SquadControlMode.PLAYER_CONTROL:
+			for s in find_children("Soldier*"):
+				if "is_bot" in s:
+					s.is_bot = false
+				if "use_nn" in s:
+					s.use_nn = false
+				var a = s.get_node_or_null("AI")
+				if a:
+					a.policy_source = a.PolicySource.HUMAN
+					a.is_bot = false
+					a.heuristic = "human"
 	spawn()
 	if zombies_spawned < zombies_per_episode:
 		$SpawnTimer.start()
@@ -102,13 +164,22 @@ func reset():
 	for s in find_children("Soldier*"):
 		if s.has_method("respawn"):
 			s.respawn()
-		if squad_bots:
+		if squad_mode == SquadControlMode.HEURISTIC_BOTS and squad_bots:
 			if "is_bot" in s:
 				s.is_bot = true
 			var a = s.get_node_or_null("AI")
 			if a:
 				a.is_bot = true
 				a.heuristic = "bot"
+		elif squad_mode == SquadControlMode.TRAINING:
+			if "is_bot" in s:
+				s.is_bot = false
+			var a = s.get_node_or_null("AI")
+			if a:
+				a.policy_source = a.PolicySource.HUMAN
+				a.control_mode = a.ControlModes.TRAINING
+				a.is_bot = false
+				a.heuristic = "human"
 		# The agent's per-episode counters are NOT cleared here. The Sync node
 		# clears them via set_done_false() after reporting the episode to SB3;
 		# clearing them now would report a zero-return episode.

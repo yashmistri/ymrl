@@ -24,6 +24,12 @@ var last_hit_target: Node3D = null
 var is_dead:bool=false
 @onready var ai: AIController3D = find_child("AI")
 
+# Locomotion momentum and inertia
+@export var acceleration: float = 16.0
+@export var deceleration: float = 22.0
+var locomotion_velocity: Vector3 = Vector3.ZERO
+var knockback_velocity: Vector3 = Vector3.ZERO
+
 # --- Soft separation -------------------------------------------------------
 #
 # Entity capsules do NOT collide with each other (layer 2 / layer 4 removed from
@@ -101,21 +107,28 @@ func _physics_process(delta: float) -> void:
 		else:
 			forward = Vector3.FORWARD
 
-	if move:
+	var target_velocity := Vector3.ZERO
+	if move.length_squared() > 0.0001:
 		# Facing -Z, right is +X: forward (0, 0, -1) -> right (1, 0, 0).
 		var right := Vector3(-forward.z, 0.0, forward.x)
 		# move.x: strafe, + is right. move.z: W is -1 (toward aim), S is +1.
-		if move.z > 0.0:
-			move.z *= BACKPEDAL_SPEED
-		else:
-			move.z *= 1.0
-		velocity = (right * move.x * STRAFE_SPEED - forward * move.z) * current_speed
+		var mz := move.z * (BACKPEDAL_SPEED if move.z > 0.0 else 1.0)
+		target_velocity = (right * move.x * STRAFE_SPEED - forward * mz) * current_speed
+
+	var rate := acceleration if target_velocity.length_squared() > 0.01 else deceleration
+	locomotion_velocity.x = move_toward(locomotion_velocity.x, target_velocity.x, rate * delta)
+	locomotion_velocity.z = move_toward(locomotion_velocity.z, target_velocity.z, rate * delta)
+	locomotion_velocity.y = 0.0
+
+	# Decay knockback
+	if knockback_velocity.length_squared() > 0.001:
+		knockback_velocity = knockback_velocity.move_toward(Vector3.ZERO, 30.0 * delta)
 	else:
-		velocity = Vector3.ZERO
+		knockback_velocity = Vector3.ZERO
 
 	# Add the separation push on top of the intended motion, then move. Walls
 	# still stop everything because they remain in collision_mask.
-	velocity += compute_separation_velocity()
+	velocity = locomotion_velocity + knockback_velocity + compute_separation_velocity()
 	move_and_slide()
 
 
@@ -242,7 +255,15 @@ func take_damage(damage:float, _attacker: Node3D = null) -> Dictionary:
 func _on_damage_taken(_percent_damage: float) -> void:
 	pass
 
+func apply_knockback(force: Vector3) -> void:
+	if is_dead:
+		return
+	knockback_velocity += force
+
 func die():
 	debug_log("die", "{0} die".format([name]))
 	is_dead=true
+	locomotion_velocity = Vector3.ZERO
+	knockback_velocity = Vector3.ZERO
+	velocity = Vector3.ZERO
 	queue_free()

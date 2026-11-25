@@ -27,7 +27,10 @@ const ZOMBIE_TSN := "res://characters/zombie3/zombie3.tscn"
 const OUTLINE_SHADER_PATH := "res://characters/soldier3/outline.gdshader"
 const ZOMBIE_TINT_SHADER_PATH := "res://characters/common/zombie_tint.gdshader"
 
-const PALADIN_BODY := "Skeleton3D/Paladin_J_Nordstrom"
+# In Mixamo's Paladin J Nordstrom.fbx, the mesh names are inverted:
+# "Paladin_J_Nordstrom_Helmet" is the full knight body, and "Paladin_J_Nordstrom" is the helmet.
+const PALADIN_BODY := "Skeleton3D/Paladin_J_Nordstrom_Helmet"
+const PALADIN_HELMET := "Skeleton3D/Paladin_J_Nordstrom"
 const ANIMATOR_SCRIPT := "res://characters/common/character_animator.gd"
 
 # Nodes the scripts look up by path. A missing one is a build failure.
@@ -39,28 +42,21 @@ const REQUIRED_NODES := {
 }
 
 const OUTLINE_SHADER := """shader_type spatial;
-render_mode unshaded, cull_front, depth_draw_opaque, shadows_disabled;
+render_mode unshaded, cull_front, shadows_disabled;
 
 // Inverted-hull outline. A second MeshInstance3D shares the paladin's mesh and
 // skeleton, runs the same GPU skinning, and is pushed out along its own normals
 // far enough to clear the silhouette in front of the body. Front faces are
 // culled, so all that remains visible is the rim poking past the model.
-//
-// depth_draw_opaque lets the hull write depth so the real body still occludes
-// it correctly; shadows_disabled stops the expanded copy casting its own,
-// slightly larger shadow.
 uniform float outline_width : hint_range(0.0, 0.05, 0.001) = 0.012;
 uniform vec4 outline_color : source_color = vec4(1.0, 1.0, 1.0, 1.0);
 
 void vertex() {
-	// Expand in world space so a non-uniform node scale cannot skew the width.
 	VERTEX += NORMAL * outline_width;
-	POSITION = PROJECTION_MATRIX * VIEW_MATRIX * (MODEL_MATRIX * vec4(VERTEX, 1.0));
 }
 
 void fragment() {
 	ALBEDO = outline_color.rgb;
-	// Unshaded, so ALPHA is used directly rather than as a fade mask.
 	ALPHA = outline_color.a;
 }
 """
@@ -189,9 +185,8 @@ func _rebuild_from_built(root: Node, scene_path: String) -> void:
 		root.free()
 		return
 	body.name = "Mesh"
-	# Re-apply the +Z -> -Z yaw, since this path rebuilds an already-converted
-	# scene rather than adopting a fresh import.
-	body.rotation.y = PI
+	# Match Skeleton3D yaw (0.0); Char3 already rotates +Z toward aim.
+	body.rotation.y = 0.0
 	_finish_build(root, scene_path, skeleton, body)
 	_validate_and_save(root, scene_path)
 
@@ -231,13 +226,21 @@ func _finish_build(root: Node, scene_path: String, skeleton: Skeleton3D, body: M
 		body.owner = null
 		body.reparent(root, false)
 		_own_recursive(body, root)
+	skeleton.position.y = -1.0
 	body.skeleton = body.get_path_to(skeleton)
-	body.rotation.y = PI
+	body.rotation.y = 0.0
+	body.position.y = -1.0
+	body.custom_aabb = AABB(Vector3(-1.0, 0.0, -1.0), Vector3(2.0, 2.5, 2.0))
+	body.extra_cull_margin = 2.0
 	if helmet.get_parent() != root:
 		helmet.owner = null
 		helmet.reparent(root, false)
 		_own_recursive(helmet, root)
 	helmet.skeleton = helmet.get_path_to(skeleton)
+	helmet.rotation.y = 0.0
+	helmet.position.y = -1.0
+	helmet.custom_aabb = AABB(Vector3(-1.0, 0.0, -1.0), Vector3(2.0, 2.5, 2.0))
+	helmet.extra_cull_margin = 2.0
 
 	# Clear anything a previous build or an unsaved editor session left behind,
 	# so a re-run does not stack hulls or shaders.
@@ -303,8 +306,9 @@ func _adopt_paladin(root: Node, scene_path: String, paladin: PackedScene) -> Dic
 	# so its children are Skeleton3D and AnimationPlayer.
 	var skeleton: Skeleton3D = paladin_inst.get_node_or_null("Skeleton3D")
 	var body: MeshInstance3D = paladin_inst.get_node_or_null(PALADIN_BODY)
-	if skeleton == null or body == null:
-		_fail(scene_path + ": paladin skeleton/body not found")
+	var helmet: MeshInstance3D = paladin_inst.get_node_or_null(PALADIN_HELMET)
+	if skeleton == null or body == null or helmet == null:
+		_fail(scene_path + ": paladin skeleton/body/helmet not found")
 		paladin_inst.free()
 		return {}
 	# Reparented sub-scene nodes keep the paladin root as `owner`, which the
@@ -316,18 +320,16 @@ func _adopt_paladin(root: Node, scene_path: String, paladin: PackedScene) -> Dic
 	_own_recursive(skeleton, root)
 	# Move the two meshes out of the paladin root (leaving behind its
 	# AnimationPlayer, which holds the unused Mixamo take) and repoint their
-	# skin to the adopted skeleton. soldier3_ai.gd reads $"../Mesh" for yaw
-	# and soldier3.gd aligns $Mesh, so the body mesh is renamed "Mesh".
+	# skin to the adopted skeleton.
 	for child in skeleton.get_children():
 		child.reparent(skeleton, false)
 		child.skeleton = child.get_path_to(skeleton)
 		_own_recursive(child, root)
 	paladin_inst.free()
 	body.name = "Mesh"
-	# soldier3.gd/char3.gd orient the character by rotating $Mesh so its -Z
-	# faces the aim. The paladin is authored facing +Z (toes point at +Z), so
-	# without this yaw the model would walk backwards.
-	body.rotation.y = PI
+	helmet.name = "Paladin_J_Nordstrom_Helmet"
+	body.rotation.y = 0.0
+	helmet.rotation.y = 0.0
 	return {"skeleton": skeleton, "body": body}
 
 
@@ -381,7 +383,10 @@ func _add_outline(root: Node, skeleton: Skeleton3D, source: MeshInstance3D) -> v
 	var outline := MeshInstance3D.new()
 	outline.name = "Outline" if source.name == "Mesh" else "OutlineHelmet"
 	outline.mesh = source.mesh
+	outline.skin = source.skin
 	outline.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	outline.custom_aabb = source.custom_aabb
+	outline.extra_cull_margin = source.extra_cull_margin
 	# Copy the source's transform (notably the +Z -> -Z yaw) so hull and mesh
 	# are exactly aligned.
 	outline.transform = source.transform

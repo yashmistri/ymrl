@@ -1,0 +1,143 @@
+[gd_scene load_steps=12 format=3 uid="uid://arena_dividers_02"]
+
+[ext_resource type="Script" path="res://scenes/3d/arenas/arena_base.gd" id="1_base"]
+
+[sub_resource type="NavigationMesh" id="NavigationMesh_dividers"]
+agent_radius = 0.5
+agent_height = 1.8
+agent_max_climb = 0.5
+agent_max_slope = 45.0
+
+[sub_resource type="BoxMesh" id="BoxMesh_floor"]
+size = Vector3(32, 1, 32)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
+size = Vector3(32, 1, 32)
+
+[sub_resource type="StandardMaterial3D" id="Mat_floor"]
+shading_mode = 0
+albedo_color = Color(0.65, 0.68, 0.72, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_wall"]
+shading_mode = 0
+albedo_color = Color(0.3, 0.35, 0.42, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_divider"]
+shading_mode = 0
+albedo_color = Color(0.48, 0.42, 0.36, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_wall_ns"]
+size = Vector3(32, 3, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wall_ns"]
+size = Vector3(32, 3, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_wall_ew"]
+size = Vector3(1, 3, 32)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wall_ew"]
+size = Vector3(1, 3, 32)
+
+[sub_resource type="BoxMesh" id="BoxMesh_divider_seg"]
+size = Vector3(1, 3, 9)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_divider_seg"]
+size = Vector3(1, 3, 9)
+
+[node name="ArenaDividers" type="Node3D"]
+script = ExtResource("1_base")
+arena_name = "Dividers (Three-Lane) Arena"
+
+[node name="NavRegion" type="NavigationRegion3D" parent="."]
+navigation_mesh = SubResource("NavigationMesh_dividers")
+
+[node name="Floor" type="StaticBody3D" parent="NavRegion"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+collision_mask = 0
+
+[node name="Mesh" type="MeshInstance3D" parent="NavRegion/Floor"]
+mesh = SubResource("BoxMesh_floor")
+surface_material_override/0 = SubResource("Mat_floor")
+
+[node name="Col" type="CollisionShape3D" parent="NavRegion/Floor"]
+shape = SubResource("BoxShape3D_floor")
+
+[node name="WallNorth" type="StaticBody3D" parent="NavRegion"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -16)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavRegion/WallNorth"]
+mesh = SubResource("BoxMesh_wall_ns")
+surface_material_override/0 = SubResource("Mat_wall")
+
+[node name="Col" type="CollisionShape3D" parent="NavRegion/WallNorth"]
+shape = SubResource("BoxShape3D_wall_ns")
+
+[node name="WallSouth" type="StaticBody3D" parent="NavRegion"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 16)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavRegion/WallSouth"]
+mesh = SubResource("BoxMesh_wall_ns")
+surface_material_override/0 = SubResource("Mat_wall")
+
+[node name="Col" type="CollisionShape3D" parent="NavRegion/WallSouth"]
+shape = SubResource("BoxShape3D_wall_ns")
+
+[node name="WallWest" type="StaticBody3D" parent="NavRegion"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 1.5, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavRegion/WallWest"]
+mesh = SubResource("BoxMesh_wall_ew")
+surface_material_override/0 = SubResource("Mat_wall")
+
+[node name="Col" type="CollisionShape3D" parent="NavRegion/WallWest"]
+shape = SubResource("BoxShape3D_wall_ew")
+
+[node name="WallEast" type="StaticBody3D" parent="NavRegion"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 1.5, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavRegion/WallEast"]
+mesh = SubResource("BoxMesh_wall_ew")
+surface_material_override/0 = SubResource("Mat_wall")
+
+[node name="Col" type="CollisionShape3D" parent="NavRegion/WallEast"]
+shape = SubResource("BoxShape3D_wall_ew")
+
+[node name="DividerLeftNorth" type="StaticBody3D" parent="NavRegion" groups=["cover", "obstacle"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 1.5, -8.5)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavRegion/DividerLeftNorth"]
+mesh = SubResource("BoxMesh_divider_seg")
+surface_material_override/0 = SubResource("Mat_divider")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NavRegion/DividerLeftNorth"]
+shape = SubResource("BoxShape3D_divider_seg")
+
+[node name="DividerLeftSouth" type="StaticBody3D" parent="NavRegion" groups=["cover", "obstacle"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 1.5, 8.5)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavRegion/DividerLeftSouth"]
+mesh = SubResource("BoxMesh_divider_seg")
+surface_material_override/0 = SubResource("Mat_divider")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NavRegion/DividerLeftSouth"]
+shape = SubResource("BoxShape3D_divider_seg")
+
+[node name="DividerRightNorth" type="StaticBody3D" parent="NavRegion" groups=["cover", "obstacle"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.5, 1.5, -8.5)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavRegion/DividerRightNorth"]
+mesh = SubResource("BoxMesh_divider_seg")
+surface_material_override/0 = SubResource("Mat_divider")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NavRegion/DividerRightNorth"]
+shape = SubResource("BoxShape3D_divider_seg")
+
+[node name="DividerRightSouth" type="StaticBody3D" parent="NavRegion" groups=["cover", "obstacle"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.5, 1.5, 8.5)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavRegion/DividerRightSouth"]
+mesh = SubResource("BoxMesh_divider_seg")
+surface_material_override/0 = SubResource("Mat_divider")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NavRegion/DividerRightSouth"]
+shape = SubResource("BoxShape3D_divider_seg")

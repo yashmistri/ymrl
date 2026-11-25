@@ -11,18 +11,20 @@ config_version=5
 [application]
 
 config/name="YMRL"
-run/main_scene="res://scenes/3d/squad3.tscn"
+run/main_scene="res://scenes/3d/test_koth_inference.tscn"
 config/features=PackedStringArray("4.7", "C#", "Forward Plus")
 config/icon="res://icon.svg"
 
 [autoload]
 
 _mcp_game_helper="*res://addons/godot_ai/runtime/game_helper.gd"
+WindowControls="*res://autoload/window_controls.gd"
 
 [display]
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
+window/size/mode=2
 window/size/initial_position_type=2
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"

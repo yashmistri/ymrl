@@ -1,17 +1,16 @@
-[gd_scene format=4]
+[gd_scene format=4 uid="uid://21g6x1jhs37n"]
 
-[ext_resource type="Script" path="res://characters/soldier3/soldier3.gd" id="1_cj67r"]
-[ext_resource type="Script" path="res://characters/soldier3/soldier3_ai.gd" id="2_lbr5k"]
-[ext_resource type="Script" path="res://addons/godot_rl_agents/sensors/sensors_3d/RaycastSensor3D.gd" id="3_lbr5k"]
-[ext_resource type="Script" path="res://characters/common/hit.gd" id="4_hiq48"]
-[ext_resource type="PackedScene" path="res://characters/common/health_bar_3d.tscn" id="5_1iif0"]
-[ext_resource type="Script" path="res://characters/common/entity_sensor_3d.gd" id="6_entsens"]
-[ext_resource type="Script" path="res://characters/common/health_bar_3d.gd" id="7_u3y5e"]
-[ext_resource type="Texture2D" path="res://assets/Paladin J Nordstrom_0.png" id="8_xsxuf"]
-[ext_resource type="Texture2D" path="res://assets/Paladin J Nordstrom_2.png" id="9_8r08w"]
-[ext_resource type="Shader" path="res://characters/soldier3/outline.gdshader" id="10_fldi8"]
-[ext_resource type="Script" path="res://characters/common/character_animator.gd" id="11_xsxuf"]
-[ext_resource type="Script" path="res://characters/common/ally_sensor_3d.gd" id="12_allysens"]
+[ext_resource type="Script" uid="uid://b6i2fwwbr2p83" path="res://characters/soldier3/soldier3.gd" id="1_cj67r"]
+[ext_resource type="Script" uid="uid://derma1b673fbr" path="res://characters/soldier3/soldier3_ai.gd" id="2_lbr5k"]
+[ext_resource type="Script" uid="uid://c265jjwap0lr" path="res://addons/godot_rl_agents/sensors/sensors_3d/RaycastSensor3D.gd" id="3_lbr5k"]
+[ext_resource type="Script" uid="uid://b0mvymfdox8t8" path="res://characters/common/hit.gd" id="4_hiq48"]
+[ext_resource type="PackedScene" uid="uid://dr07qfaemmbxc" path="res://characters/common/health_bar_3d.tscn" id="5_1iif0"]
+[ext_resource type="Script" uid="uid://bskh76dt2spfw" path="res://characters/common/entity_sensor_3d.gd" id="6_entsens"]
+[ext_resource type="Texture2D" uid="uid://dmytxy7ruslut" path="res://assets/Paladin J Nordstrom_0.png" id="8_xsxuf"]
+[ext_resource type="Texture2D" uid="uid://ddkwvcxj7lpaa" path="res://assets/Paladin J Nordstrom_2.png" id="9_8r08w"]
+[ext_resource type="Shader" uid="uid://c4x2tl0hrg8bg" path="res://characters/soldier3/outline.gdshader" id="10_fldi8"]
+[ext_resource type="Script" uid="uid://diww5hqjxisqf" path="res://characters/common/character_animator.gd" id="11_xsxuf"]
+[ext_resource type="Script" uid="uid://dj7b11mnyed43" path="res://characters/common/ally_sensor_3d.gd" id="12_allysens"]
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_hlpfh"]
 
@@ -258,8 +257,8 @@ bind/66/pose = Transform3D(-0.997995, -1.638086e-06, 0.063296884, 0.0632967, -0.
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_8r08w"]
 render_priority = 0
 shader = ExtResource("10_fldi8")
-shader_parameter/outline_width = null
-shader_parameter/outline_color = null
+shader_parameter/outline_width = 0.012
+shader_parameter/outline_color = Color(1, 1, 1, 1)
 
 [sub_resource type="ArrayMesh" id="ArrayMesh_17mgy"]
 resource_name = "Paladin_J_Nordstrom_Helmet"
@@ -489,8 +488,33 @@ bind/66/pose = Transform3D(-0.997995, -1.638086e-06, 0.063296884, 0.0632967, -0.
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_fldi8"]
 render_priority = 0
 shader = ExtResource("10_fldi8")
-shader_parameter/outline_width = null
-shader_parameter/outline_color = null
+shader_parameter/outline_width = 0.012
+shader_parameter/outline_color = Color(1, 1, 1, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_xsxuf"]
+shading_mode = 0
+albedo_color = Color(1, 0.9, 0.2, 0.9)
+
+[sub_resource type="TorusMesh" id="TorusMesh_8r08w"]
+inner_radius = 0.25
+outer_radius = 0.35
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_fldi8"]
+shading_mode = 0
+albedo_color = Color(0.62, 0.82, 1, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_ak56h"]
+height = 0.1
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_07ap7"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0.2, 1, 0.45, 0.8)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_vdurn"]
+top_radius = 0.08
+bottom_radius = 0.08
+height = 1.0
 
 [node name="Soldier" type="CharacterBody3D" unique_id=1328232549]
 collision_layer = 2
@@ -501,6 +525,7 @@ attack_range = 3.0
 
 [node name="hit" type="Node3D" parent="." unique_id=157257603]
 transform = Transform3D(0.38109845, 0, 0, 0, 0.38109845, 0, 0, 0, 0.38109845, 0, 0, 0)
+visible = false
 script = ExtResource("4_hiq48")
 
 [node name="mesh" type="MeshInstance3D" parent="hit" unique_id=1700927018]
@@ -565,9 +590,8 @@ shape = SubResource("CapsuleShape3D_7jswi")
 target_position = Vector3(0, 0, -1)
 collision_mask = 4
 
-[node name="HealthBar" type="Node3D" parent="." unique_id=573215844 instance=ExtResource("5_1iif0")]
+[node name="HealthBar" parent="." unique_id=573215844 instance=ExtResource("5_1iif0")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, 0)
-script = ExtResource("7_u3y5e")
 
 [node name="Skeleton3D" type="Skeleton3D" parent="." unique_id=887968980]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
@@ -1042,28 +1066,81 @@ bones/66/rotation = Quaternion(-4.3368087e-19, 4.065758e-20, 1.7632415e-38, 1)
 bones/66/scale = Vector3(1, 1, 1)
 
 [node name="Mesh" type="MeshInstance3D" parent="." unique_id=1708579949]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0, 0)
-mesh = SubResource("ArrayMesh_71gio")
-skin = SubResource("Skin_ir1ii")
-skeleton = NodePath("../Skeleton3D")
-
-[node name="Outline" type="MeshInstance3D" parent="." unique_id=1333566084]
-transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0, 0)
-material_override = SubResource("ShaderMaterial_8r08w")
-cast_shadow = 0
-mesh = SubResource("ArrayMesh_71gio")
-skeleton = NodePath("../Skeleton3D")
-
-[node name="Paladin_J_Nordstrom_Helmet" type="MeshInstance3D" parent="." unique_id=1971696192]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
+extra_cull_margin = 2.0
+custom_aabb = AABB(-1, 0, -1, 2, 2.5, 2)
 mesh = SubResource("ArrayMesh_17mgy")
 skin = SubResource("Skin_hiynl")
 skeleton = NodePath("../Skeleton3D")
 
+[node name="Outline" type="MeshInstance3D" parent="." unique_id=1333566084]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
+material_override = SubResource("ShaderMaterial_8r08w")
+cast_shadow = 0
+extra_cull_margin = 2.0
+custom_aabb = AABB(-1, 0, -1, 2, 2.5, 2)
+mesh = SubResource("ArrayMesh_17mgy")
+skin = SubResource("Skin_hiynl")
+skeleton = NodePath("../Skeleton3D")
+
+[node name="Paladin_J_Nordstrom_Helmet" type="MeshInstance3D" parent="." unique_id=1971696192]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
+extra_cull_margin = 2.0
+custom_aabb = AABB(-1, 0, -1, 2, 2.5, 2)
+mesh = SubResource("ArrayMesh_71gio")
+skin = SubResource("Skin_ir1ii")
+skeleton = NodePath("../Skeleton3D")
+
 [node name="OutlineHelmet" type="MeshInstance3D" parent="." unique_id=247205300]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
 material_override = SubResource("ShaderMaterial_fldi8")
 cast_shadow = 0
-mesh = SubResource("ArrayMesh_17mgy")
+extra_cull_margin = 2.0
+custom_aabb = AABB(-1, 0, -1, 2, 2.5, 2)
+mesh = SubResource("ArrayMesh_71gio")
+skin = SubResource("Skin_ir1ii")
 skeleton = NodePath("../Skeleton3D")
 
 [node name="Animator" type="Node" parent="." unique_id=1414893571]
 script = ExtResource("11_xsxuf")
+
+[node name="LocomotionPlayer" type="AnimationPlayer" parent="Animator" unique_id=1374139289]
+root_node = NodePath("../..")
+
+[node name="NavAgent" type="NavigationAgent3D" parent="." unique_id=10860849]
+path_desired_distance = 0.8
+target_desired_distance = 0.8
+path_max_distance = 3.0
+avoidance_enabled = true
+neighbor_distance = 4.0
+max_neighbors = 10
+time_horizon_agents = 1.2
+radius = 0.55
+max_speed = 6.0
+
+[node name="LevelLabel" type="Label3D" parent="." unique_id=715719701]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.3, 0)
+billboard = 1
+text = "Lv.1"
+font_size = 36
+outline_size = 8
+
+[node name="StunIndicator" type="MeshInstance3D" parent="." unique_id=1776670027]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.05, 0)
+visible = false
+material_override = SubResource("StandardMaterial3D_xsxuf")
+cast_shadow = 0
+mesh = SubResource("TorusMesh_8r08w")
+
+[node name="Shield" type="MeshInstance3D" parent="." unique_id=533739526]
+transform = Transform3D(1, 0, 0, 0, 7.54979e-08, -1, 0, 1, 7.54979e-08, 0, 0.25, -0.78)
+visible = false
+material_override = SubResource("StandardMaterial3D_fldi8")
+cast_shadow = 0
+mesh = SubResource("CylinderMesh_ak56h")
+
+[node name="HealBeam" type="MeshInstance3D" parent="." unique_id=1242262258]
+visible = false
+material_override = SubResource("StandardMaterial3D_07ap7")
+cast_shadow = 0
+mesh = SubResource("CylinderMesh_vdurn")

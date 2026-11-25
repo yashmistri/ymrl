@@ -1,0 +1,29 @@
+[gd_scene format=3 uid="uid://cqw81xvyv3m4l"]
+
+[ext_resource type="Script" path="res://training/training.gd" id="1_train"]
+[ext_resource type="Script" path="res://addons/godot_rl_agents/sync.gd" id="2_sync"]
+[ext_resource type="PackedScene" path="res://scenes/3d/squad3.tscn" id="3_squad_pve"]
+[ext_resource type="PackedScene" path="res://scenes/3d/squad_pvp.tscn" id="4_squad_pvp"]
+
+[node name="TrainingSquadMixed" type="Node"]
+script = ExtResource("1_train")
+
+[node name="Sync" type="Node" parent="."]
+script = ExtResource("2_sync")
+speed_up = 10.0
+action_repeat = 8
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 50, 60, 40)
+projection = 1
+current = true
+size = 120.0
+
+[node name="PvE_Arena" parent="." instance=ExtResource("3_squad_pve")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+squad_mode = 3
+zombies_per_episode = 6
+
+[node name="PvP_Arena" parent="." instance=ExtResource("4_squad_pvp")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 100, 0, 0)
+pvp_mode = 2

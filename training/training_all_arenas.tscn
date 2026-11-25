@@ -1,0 +1,204 @@
+[gd_scene format=3 uid="uid://cjd57nhm6haps"]
+
+[ext_resource type="Script" uid="uid://cto7113o3bvf4" path="res://training/training.gd" id="1_train"]
+[ext_resource type="Script" uid="uid://coprvdmwywes7" path="res://addons/godot_rl_agents/sync.gd" id="2_sync"]
+[ext_resource type="Script" uid="uid://i1gycki3nf0a" path="res://training/arena_training_cell.gd" id="3_cell"]
+[ext_resource type="PackedScene" path="res://scenes/3d/arenas/arena_pillars.tscn" id="4_pillars"]
+[ext_resource type="PackedScene" path="res://scenes/3d/arenas/arena_dividers.tscn" id="5_dividers"]
+[ext_resource type="PackedScene" uid="uid://21g6x1jhs37n" path="res://characters/soldier3/soldier3.tscn" id="6_6qhet"]
+[ext_resource type="PackedScene" path="res://scenes/3d/arenas/arena_alcoves.tscn" id="6_alcoves"]
+[ext_resource type="PackedScene" path="res://scenes/3d/arenas/arena_compound.tscn" id="7_compound"]
+[ext_resource type="Script" uid="uid://qm0fsj3fpoa6" path="res://scenes/components/camera_controller.gd" id="8_cam"]
+
+[node name="TrainingAllArenas" type="Node" unique_id=1487089702]
+script = ExtResource("1_train")
+
+[node name="Sync" type="Node" parent="." unique_id=1847805159]
+script = ExtResource("2_sync")
+speed_up = 10.0
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1714908128]
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 35, 80, 75)
+projection = 1
+current = true
+size = 140.0
+script = ExtResource("8_cam")
+
+[node name="Cell_Pillars" type="Node3D" parent="." unique_id=245168770]
+script = ExtResource("3_cell")
+arena_scene = ExtResource("4_pillars")
+
+[node name="ArenaPillars" parent="Cell_Pillars" unique_id=181385302 instance=ExtResource("4_pillars")]
+
+[node name="CellEpisodeTimer" type="Timer" parent="Cell_Pillars" unique_id=503393890]
+wait_time = 60.0
+one_shot = true
+
+[node name="Blue_Tank" parent="Cell_Pillars" unique_id=1328232549 instance=ExtResource("6_6qhet")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 1, -2.5)
+role = 0
+is_bot = false
+squad_slot_index = 0
+
+[node name="Blue_Medic" parent="Cell_Pillars" unique_id=472114383 instance=ExtResource("6_6qhet")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.5, 1, 2)
+role = 1
+is_bot = false
+squad_slot_index = 1
+
+[node name="Blue_Striker" parent="Cell_Pillars" unique_id=1018033855 instance=ExtResource("6_6qhet")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 1, 0)
+is_bot = false
+squad_slot_index = 2
+
+[node name="Red_Tank" parent="Cell_Pillars" unique_id=1052264962 instance=ExtResource("6_6qhet")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1, 2.5)
+role = 0
+team = 1
+squad_slot_index = 0
+
+[node name="Red_Medic" parent="Cell_Pillars" unique_id=617364597 instance=ExtResource("6_6qhet")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.5, 1, -2)
+role = 1
+team = 1
+squad_slot_index = 1
+
+[node name="Red_Striker" parent="Cell_Pillars" unique_id=1458385800 instance=ExtResource("6_6qhet")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1, 0)
+team = 1
+squad_slot_index = 2
+
+[node name="Cell_Dividers" type="Node3D" parent="." unique_id=1052988679]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 70, 0, 0)
+script = ExtResource("3_cell")
+arena_scene = ExtResource("5_dividers")
+
+[node name="ArenaDividers" parent="Cell_Dividers" unique_id=1577900519 instance=ExtResource("5_dividers")]
+
+[node name="CellEpisodeTimer" type="Timer" parent="Cell_Dividers" unique_id=427241791]
+wait_time = 60.0
+one_shot = true
+
+[node name="Blue_Tank" parent="Cell_Dividers" unique_id=1907025425 instance=ExtResource("6_6qhet")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 1, -2.5)
+role = 0
+is_bot = false
+squad_slot_index = 0
+
+[node name="Blue_Medic" parent="Cell_Dividers" unique_id=1701928072 instance=ExtResource("6_6qhet")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.5, 1, 2)
+role = 1
+is_bot = false
+squad_slot_index = 1
+
+[node name="Blue_Striker" parent="Cell_Dividers" unique_id=1725024078 instance=ExtResource("6_6qhet")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 1, 0)
+is_bot = false
+squad_slot_index = 2
+
+[node name="Red_Tank" parent="Cell_Dividers" unique_id=627269536 instance=ExtResource("6_6qhet")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1, 2.5)
+role = 0
+team = 1
+squad_slot_index = 0
+
+[node name="Red_Medic" parent="Cell_Dividers" unique_id=1899189317 instance=ExtResource("6_6qhet")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.5, 1, -2)
+role = 1
+team = 1
+squad_slot_index = 1
+
+[node name="Red_Striker" parent="Cell_Dividers" unique_id=1811071348 instance=ExtResource("6_6qhet")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1, 0)
+team = 1
+squad_slot_index = 2
+
+[node name="Cell_Alcoves" type="Node3D" parent="." unique_id=1955955839]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 70)
+script = ExtResource("3_cell")
+arena_scene = ExtResource("6_alcoves")
+
+[node name="ArenaAlcoves" parent="Cell_Alcoves" unique_id=126402710 instance=ExtResource("6_alcoves")]
+
+[node name="CellEpisodeTimer" type="Timer" parent="Cell_Alcoves" unique_id=1526226753]
+wait_time = 60.0
+one_shot = true
+
+[node name="Blue_Tank" parent="Cell_Alcoves" unique_id=1647537585 instance=ExtResource("6_6qhet")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 1, -2.5)
+role = 0
+is_bot = false
+squad_slot_index = 0
+
+[node name="Blue_Medic" parent="Cell_Alcoves" unique_id=624152226 instance=ExtResource("6_6qhet")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.5, 1, 2)
+role = 1
+is_bot = false
+squad_slot_index = 1
+
+[node name="Blue_Striker" parent="Cell_Alcoves" unique_id=1807609957 instance=ExtResource("6_6qhet")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 1, 0)
+is_bot = false
+squad_slot_index = 2
+
+[node name="Red_Tank" parent="Cell_Alcoves" unique_id=2018533125 instance=ExtResource("6_6qhet")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1, 2.5)
+role = 0
+team = 1
+squad_slot_index = 0
+
+[node name="Red_Medic" parent="Cell_Alcoves" unique_id=788786817 instance=ExtResource("6_6qhet")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.5, 1, -2)
+role = 1
+team = 1
+squad_slot_index = 1
+
+[node name="Red_Striker" parent="Cell_Alcoves" unique_id=1984957717 instance=ExtResource("6_6qhet")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1, 0)
+team = 1
+squad_slot_index = 2
+
+[node name="Cell_Compound" type="Node3D" parent="." unique_id=1119157641]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 70, 0, 70)
+script = ExtResource("3_cell")
+arena_scene = ExtResource("7_compound")
+
+[node name="ArenaCompound" parent="Cell_Compound" unique_id=736268391 instance=ExtResource("7_compound")]
+
+[node name="CellEpisodeTimer" type="Timer" parent="Cell_Compound" unique_id=1081776893]
+wait_time = 60.0
+one_shot = true
+
+[node name="Blue_Tank" parent="Cell_Compound" unique_id=834432309 instance=ExtResource("6_6qhet")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 1, -2.5)
+role = 0
+is_bot = false
+squad_slot_index = 0
+
+[node name="Blue_Medic" parent="Cell_Compound" unique_id=1153643942 instance=ExtResource("6_6qhet")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.5, 1, 2)
+role = 1
+is_bot = false
+squad_slot_index = 1
+
+[node name="Blue_Striker" parent="Cell_Compound" unique_id=119783928 instance=ExtResource("6_6qhet")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 1, 0)
+is_bot = false
+squad_slot_index = 2
+
+[node name="Red_Tank" parent="Cell_Compound" unique_id=103213069 instance=ExtResource("6_6qhet")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1, 2.5)
+role = 0
+team = 1
+squad_slot_index = 0
+
+[node name="Red_Medic" parent="Cell_Compound" unique_id=1763267968 instance=ExtResource("6_6qhet")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.5, 1, -2)
+role = 1
+team = 1
+squad_slot_index = 1
+
+[node name="Red_Striker" parent="Cell_Compound" unique_id=248216098 instance=ExtResource("6_6qhet")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 1, 0)
+team = 1
+squad_slot_index = 2

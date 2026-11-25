@@ -1,0 +1,338 @@
+[gd_scene format=3 uid="uid://qgcegrheg6hw"]
+
+[ext_resource type="Script" uid="uid://cto7113o3bvf4" path="res://training/training.gd" id="1_train"]
+[ext_resource type="Script" uid="uid://coprvdmwywes7" path="res://addons/godot_rl_agents/sync.gd" id="2_sync"]
+[ext_resource type="Script" uid="uid://i1gycki3nf0a" path="res://training/arena_training_cell.gd" id="3_cell"]
+[ext_resource type="PackedScene" path="res://scenes/3d/arenas/arena_koth.tscn" id="4_koth"]
+[ext_resource type="Script" uid="uid://qm0fsj3fpoa6" path="res://scenes/components/camera_controller.gd" id="5_cam"]
+[ext_resource type="PackedScene" uid="uid://21g6x1jhs37n" path="res://characters/soldier3/soldier3.tscn" id="6_qlbwe"]
+
+[node name="TrainingKOTH" type="Node" unique_id=14620938]
+script = ExtResource("1_train")
+
+[node name="Sync" type="Node" parent="." unique_id=225942469]
+script = ExtResource("2_sync")
+speed_up = 10.0
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=636790395]
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 60, 110, 120)
+projection = 1
+current = true
+size = 220.0
+script = ExtResource("5_cam")
+
+[node name="Cell_KOTH_1" type="Node3D" parent="." unique_id=1692773913]
+script = ExtResource("3_cell")
+arena_scene = ExtResource("4_koth")
+episode_duration = 75.0
+squad_size = 5
+koth_mode = true
+
+[node name="ArenaKOTH" parent="Cell_KOTH_1" unique_id=1596554643 instance=ExtResource("4_koth")]
+
+[node name="CellEpisodeTimer" type="Timer" parent="Cell_KOTH_1" unique_id=1989876962]
+wait_time = 75.0
+one_shot = true
+
+[node name="Blue_Tank_1" parent="Cell_KOTH_1" unique_id=1328232549 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 1, -5)
+role = 0
+is_bot = false
+squad_slot_index = 0
+end_episode_on_death = false
+
+[node name="Blue_Medic_2" parent="Cell_KOTH_1" unique_id=398582347 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 1, -2.5)
+role = 1
+is_bot = false
+squad_slot_index = 1
+end_episode_on_death = false
+
+[node name="Blue_Striker_3" parent="Cell_KOTH_1" unique_id=1393274007 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 1, 0)
+is_bot = false
+squad_slot_index = 2
+end_episode_on_death = false
+
+[node name="Blue_Basic_4" parent="Cell_KOTH_1" unique_id=775687385 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 1, 2.5)
+role = 3
+is_bot = false
+squad_slot_index = 3
+end_episode_on_death = false
+
+[node name="Blue_Striker_5" parent="Cell_KOTH_1" unique_id=52919579 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 1, 5)
+is_bot = false
+squad_slot_index = 4
+end_episode_on_death = false
+
+[node name="Red_Tank_1" parent="Cell_KOTH_1" unique_id=391521443 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 1, -5)
+role = 0
+team = 1
+squad_slot_index = 0
+end_episode_on_death = false
+
+[node name="Red_Medic_2" parent="Cell_KOTH_1" unique_id=1306522288 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 1, -2.5)
+role = 1
+team = 1
+squad_slot_index = 1
+end_episode_on_death = false
+
+[node name="Red_Striker_3" parent="Cell_KOTH_1" unique_id=383090293 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 1, 0)
+team = 1
+squad_slot_index = 2
+end_episode_on_death = false
+
+[node name="Red_Basic_4" parent="Cell_KOTH_1" unique_id=2023065777 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 1, 2.5)
+role = 3
+team = 1
+squad_slot_index = 3
+end_episode_on_death = false
+
+[node name="Red_Striker_5" parent="Cell_KOTH_1" unique_id=111019824 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 1, 5)
+team = 1
+squad_slot_index = 4
+end_episode_on_death = false
+
+[node name="Cell_KOTH_2" type="Node3D" parent="." unique_id=1975394610]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 120, 0, 0)
+script = ExtResource("3_cell")
+episode_duration = 75.0
+squad_size = 5
+koth_mode = true
+
+[node name="ArenaKOTH" parent="Cell_KOTH_2" unique_id=1490374002 instance=ExtResource("4_koth")]
+
+[node name="CellEpisodeTimer" type="Timer" parent="Cell_KOTH_2" unique_id=333243939]
+wait_time = 75.0
+one_shot = true
+
+[node name="Blue_Tank_1" parent="Cell_KOTH_2" unique_id=1859121611 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 1, -5)
+role = 0
+is_bot = false
+squad_slot_index = 0
+end_episode_on_death = false
+
+[node name="Blue_Medic_2" parent="Cell_KOTH_2" unique_id=2112311523 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 1, -2.5)
+role = 1
+is_bot = false
+squad_slot_index = 1
+end_episode_on_death = false
+
+[node name="Blue_Striker_3" parent="Cell_KOTH_2" unique_id=1884897394 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 1, 0)
+is_bot = false
+squad_slot_index = 2
+end_episode_on_death = false
+
+[node name="Blue_Basic_4" parent="Cell_KOTH_2" unique_id=735056087 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 1, 2.5)
+role = 3
+is_bot = false
+squad_slot_index = 3
+end_episode_on_death = false
+
+[node name="Blue_Striker_5" parent="Cell_KOTH_2" unique_id=1919539064 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 1, 5)
+is_bot = false
+squad_slot_index = 4
+end_episode_on_death = false
+
+[node name="Red_Tank_1" parent="Cell_KOTH_2" unique_id=1010623910 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 1, -5)
+role = 0
+team = 1
+squad_slot_index = 0
+end_episode_on_death = false
+
+[node name="Red_Medic_2" parent="Cell_KOTH_2" unique_id=113298517 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 1, -2.5)
+role = 1
+team = 1
+squad_slot_index = 1
+end_episode_on_death = false
+
+[node name="Red_Striker_3" parent="Cell_KOTH_2" unique_id=1674567540 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 1, 0)
+team = 1
+squad_slot_index = 2
+end_episode_on_death = false
+
+[node name="Red_Basic_4" parent="Cell_KOTH_2" unique_id=370859040 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 1, 2.5)
+role = 3
+team = 1
+squad_slot_index = 3
+end_episode_on_death = false
+
+[node name="Red_Striker_5" parent="Cell_KOTH_2" unique_id=903829158 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 1, 5)
+team = 1
+squad_slot_index = 4
+end_episode_on_death = false
+
+[node name="Cell_KOTH_3" type="Node3D" parent="." unique_id=2024532280]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 120)
+script = ExtResource("3_cell")
+episode_duration = 75.0
+squad_size = 5
+koth_mode = true
+
+[node name="ArenaKOTH" parent="Cell_KOTH_3" unique_id=1575696839 instance=ExtResource("4_koth")]
+
+[node name="CellEpisodeTimer" type="Timer" parent="Cell_KOTH_3" unique_id=1434990845]
+wait_time = 75.0
+one_shot = true
+
+[node name="Blue_Tank_1" parent="Cell_KOTH_3" unique_id=399888560 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 1, -5)
+role = 0
+is_bot = false
+squad_slot_index = 0
+end_episode_on_death = false
+
+[node name="Blue_Medic_2" parent="Cell_KOTH_3" unique_id=1936007671 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 1, -2.5)
+role = 1
+is_bot = false
+squad_slot_index = 1
+end_episode_on_death = false
+
+[node name="Blue_Striker_3" parent="Cell_KOTH_3" unique_id=733937594 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 1, 0)
+is_bot = false
+squad_slot_index = 2
+end_episode_on_death = false
+
+[node name="Blue_Basic_4" parent="Cell_KOTH_3" unique_id=280416127 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 1, 2.5)
+role = 3
+is_bot = false
+squad_slot_index = 3
+end_episode_on_death = false
+
+[node name="Blue_Striker_5" parent="Cell_KOTH_3" unique_id=615479301 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 1, 5)
+is_bot = false
+squad_slot_index = 4
+end_episode_on_death = false
+
+[node name="Red_Tank_1" parent="Cell_KOTH_3" unique_id=1936887886 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 1, -5)
+role = 0
+team = 1
+squad_slot_index = 0
+end_episode_on_death = false
+
+[node name="Red_Medic_2" parent="Cell_KOTH_3" unique_id=1319898487 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 1, -2.5)
+role = 1
+team = 1
+squad_slot_index = 1
+end_episode_on_death = false
+
+[node name="Red_Striker_3" parent="Cell_KOTH_3" unique_id=192334684 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 1, 0)
+team = 1
+squad_slot_index = 2
+end_episode_on_death = false
+
+[node name="Red_Basic_4" parent="Cell_KOTH_3" unique_id=110266447 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 1, 2.5)
+role = 3
+team = 1
+squad_slot_index = 3
+end_episode_on_death = false
+
+[node name="Red_Striker_5" parent="Cell_KOTH_3" unique_id=1708531069 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 1, 5)
+team = 1
+squad_slot_index = 4
+end_episode_on_death = false
+
+[node name="Cell_KOTH_4" type="Node3D" parent="." unique_id=905373121]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 120, 0, 120)
+script = ExtResource("3_cell")
+episode_duration = 75.0
+squad_size = 5
+koth_mode = true
+
+[node name="ArenaKOTH" parent="Cell_KOTH_4" unique_id=1569570853 instance=ExtResource("4_koth")]
+
+[node name="CellEpisodeTimer" type="Timer" parent="Cell_KOTH_4" unique_id=1079220016]
+wait_time = 75.0
+one_shot = true
+
+[node name="Blue_Tank_1" parent="Cell_KOTH_4" unique_id=403895993 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 1, -5)
+role = 0
+is_bot = false
+squad_slot_index = 0
+end_episode_on_death = false
+
+[node name="Blue_Medic_2" parent="Cell_KOTH_4" unique_id=1442175699 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 1, -2.5)
+role = 1
+is_bot = false
+squad_slot_index = 1
+end_episode_on_death = false
+
+[node name="Blue_Striker_3" parent="Cell_KOTH_4" unique_id=1287097076 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 1, 0)
+is_bot = false
+squad_slot_index = 2
+end_episode_on_death = false
+
+[node name="Blue_Basic_4" parent="Cell_KOTH_4" unique_id=2044538497 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 1, 2.5)
+role = 3
+is_bot = false
+squad_slot_index = 3
+end_episode_on_death = false
+
+[node name="Blue_Striker_5" parent="Cell_KOTH_4" unique_id=248419242 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 1, 5)
+is_bot = false
+squad_slot_index = 4
+end_episode_on_death = false
+
+[node name="Red_Tank_1" parent="Cell_KOTH_4" unique_id=577531123 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 1, -5)
+role = 0
+team = 1
+squad_slot_index = 0
+end_episode_on_death = false
+
+[node name="Red_Medic_2" parent="Cell_KOTH_4" unique_id=161322724 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 1, -2.5)
+role = 1
+team = 1
+squad_slot_index = 1
+end_episode_on_death = false
+
+[node name="Red_Striker_3" parent="Cell_KOTH_4" unique_id=1198395380 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 1, 0)
+team = 1
+squad_slot_index = 2
+end_episode_on_death = false
+
+[node name="Red_Basic_4" parent="Cell_KOTH_4" unique_id=1592603577 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 1, 2.5)
+role = 3
+team = 1
+squad_slot_index = 3
+end_episode_on_death = false
+
+[node name="Red_Striker_5" parent="Cell_KOTH_4" unique_id=137424646 instance=ExtResource("6_qlbwe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 1, 5)
+team = 1
+squad_slot_index = 4
+end_episode_on_death = false

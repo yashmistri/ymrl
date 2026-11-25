@@ -109,6 +109,7 @@ shape = SubResource("BoxShape3D_hlpfh")
 
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.766044, 0.642788, 0, -0.642788, 0.766044, 0, 28, 25)
+current = true
 fov = 40.0
 
 [node name="EpisodeTimer" type="Timer" parent="."]

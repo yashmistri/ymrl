@@ -19,9 +19,15 @@ const HURT_PENALTY_FACTOR: float = 5.0
 # exploit at twenty times the scale.
 const BLOCK_REWARD_FACTOR: float = 1.0
 const KILL_REWARD: float = 6.0
-const TEAM_KILL_REWARD: float = 4.0
+const TEAM_KILL_REWARD: float = 2.5
 const DEATH_PENALTY: float = 10.0
-const TEAM_MATE_DIED_PENALTY: float = 5.0
+const TEAM_MATE_DIED_PENALTY: float = 3.0
+# King of the Hill objective rewards.
+const HILL_SCORE_TICK_REWARD: float = 0.025
+const HILL_CONTEST_STEP_BONUS: float = 0.015
+const HILL_APPROACH_SHAPING_WEIGHT: float = 0.015
+const KOTH_WIN_BONUS: float = 15.0
+const KOTH_LOSS_PENALTY: float = 15.0
 # Class ability reward weights.
 const STUN_REWARD_PER_SEC: float = 1.5
 const HEAL_REWARD_PER_HP: float = 0.10
@@ -87,25 +93,56 @@ const INVISIBLE_ZOMBIE_DISTANCE: float = 30.0
 @onready var wall_sensor: RayCastSensor3D = $"../WallSensor"
 @onready var entity_sensor: EntitySensor3D = $"../EntitySensor"
 @onready var ally_sensor: AllySensor3D = $"../AllySensor"
+enum PolicySource { BOT_HEURISTIC, NEURAL_NETWORK, HUMAN }
+@export var policy_source: PolicySource = PolicySource.BOT_HEURISTIC
+
+var _action_repeat_counter: int = 0
+var _current_action: Dictionary = {}
+
+static var _loaded_onnx_models: Dictionary = {}
+static var _onnx_mtimes: Dictionary = {}
+static var _incompatible_onnx_mtimes: Dictionary = {}
+
 @export var is_bot: bool = true:
 	set(val):
 		is_bot = val
 		if is_bot:
 			heuristic = "bot"
+			if policy_source == PolicySource.HUMAN:
+				policy_source = PolicySource.BOT_HEURISTIC
+		elif heuristic == "bot":
+			heuristic = "human"
+			policy_source = PolicySource.HUMAN
 
 # Distance to the nearest zombie seen last frame, in meters. -1 means "no
 # zombie visible", which is distinct from "very far away".
 var _prev_zombie_distance: float = -1.0
+var _prev_hill_potential: float = 0.0
 # Running reward total for the current episode, reported via get_info().
 var _episode_return: float = 0.0
 
 func _ready() -> void:
+	action_repeat = 8
+	_stagger_action_repeat()
 	super._ready()
-	if "--bot" in OS.get_cmdline_args() or "--bots" in OS.get_cmdline_args():
+	if "--nn" in OS.get_cmdline_args() or "--onnx" in OS.get_cmdline_args():
+		policy_source = PolicySource.NEURAL_NETWORK
+	elif "--bot" in OS.get_cmdline_args() or "--bots" in OS.get_cmdline_args():
 		is_bot = true
-	if is_bot or ("is_bot" in char and char.is_bot):
-		is_bot = true
-		heuristic = "bot"
+		policy_source = PolicySource.BOT_HEURISTIC
+	if char and "is_bot" in char:
+		is_bot = char.is_bot
+		if is_bot:
+			if policy_source != PolicySource.NEURAL_NETWORK:
+				heuristic = "bot"
+				policy_source = PolicySource.BOT_HEURISTIC
+		else:
+			heuristic = "human"
+			policy_source = PolicySource.HUMAN
+	elif is_bot:
+		if policy_source != PolicySource.NEURAL_NETWORK:
+			heuristic = "bot"
+			policy_source = PolicySource.BOT_HEURISTIC
 	if not ally_sensor:
 		ally_sensor = char.get_node_or_null("AllySensor")
 	if char and "team" in char and char.team == 1:
@@ -233,7 +270,10 @@ func _on_team_member_died() -> void:
 # this directly at reset time or the episode would be reported as empty.
 func reset() -> void:
 	super.reset()
+	_stagger_action_repeat()
+	_current_action = {}
 	_prev_zombie_distance = -1.0
+	_prev_hill_potential = 0.0
 	_episode_return = 0.0
 	_episode_kills = 0
 	_episode_damage_dealt = 0.0
@@ -250,6 +290,10 @@ func reset() -> void:
 	_episode_executions = 0
 	_episode_team_kills = 0
 	_episode_team_deaths = 0
+	_episode_hill_steps = 0
+	_episode_koth_win = 0
+	_episode_hill_score_own = 0.0
+	_episode_hill_score_enemy = 0.0
 	_steps_to_first_hit = -1
 	_step_idle = 0
 	_step_at_full_stamina = 0
@@ -267,6 +311,25 @@ func reset() -> void:
 			ally_sensor.target_group = "team_red"
 		ally_sensor.reset()
 	_connect_team_events()
+
+func _stagger_action_repeat() -> void:
+	var slot_idx := 0
+	if char and "squad_slot_index" in char and int(char.squad_slot_index) >= 0:
+		slot_idx = int(char.squad_slot_index)
+	else:
+		slot_idx = int(get_instance_id())
+	_action_repeat_counter = posmod(slot_idx, maxi(action_repeat, 1))
+
+func notify_koth_result(winner_team: int) -> void:
+	var my_team: int = char.team if (char and "team" in char) else 0
+	if winner_team == my_team:
+		reward += KOTH_WIN_BONUS
+		_episode_return += KOTH_WIN_BONUS
+		_episode_koth_win = 1
+	elif winner_team >= 0:
+		reward -= KOTH_LOSS_PENALTY
+		_episode_return -= KOTH_LOSS_PENALTY
+	done = true
 
 # The Sync node calls this once it has consumed the done flag. This is the
 # correct point to clear per-episode state, since get_info() has already been
@@ -305,6 +368,10 @@ var _episode_heals: float = 0.0
 var _episode_executions: int = 0
 var _episode_team_kills: int = 0
 var _episode_team_deaths: int = 0
+var _episode_hill_steps: int = 0
+var _episode_koth_win: int = 0
+var _episode_hill_score_own: float = 0.0
+var _episode_hill_score_enemy: float = 0.0
 # Per-step accumulators, sampled in get_obs() (one call per decision step).
 var _step_idle: int = 0
 var _step_at_full_stamina: int = 0
@@ -347,6 +414,10 @@ func get_info() -> Dictionary:
 		"executions": _episode_executions,
 		"team_kills": _episode_team_kills,
 		"team_deaths": _episode_team_deaths,
+		"hill_fraction": _ratio(_episode_hill_steps, _step_total),
+		"hill_score_own": _episode_hill_score_own,
+		"hill_score_enemy": _episode_hill_score_enemy,
+		"koth_win": _episode_koth_win,
 		"steps_to_first_hit": _steps_to_first_hit,
 		"idle_fraction": _ratio(_step_idle, _step_total),
 		"full_stamina_fraction": _ratio(_step_at_full_stamina, _step_total),
@@ -364,7 +435,8 @@ func get_info() -> Dictionary:
 		# both train_sb3.py's ep_len_mean and evaluate.py's length.
 		# _step_total is incremented in get_obs(), i.e. once per decision.
 		info["episode"] = {"r": _episode_return, "l": _step_total}
-		info["is_success"] = _episode_kills > 0
+		var hill := _get_hill_state()
+		info["is_success"] = (_episode_koth_win > 0) if hill.get("has_hill", false) else (_episode_kills > 0)
 	return info
 
 # Safe ratio: 0.0 rather than a NaN/inf when the denominator is zero, since a
@@ -375,15 +447,33 @@ func _ratio(numerator: int, denominator: int) -> float:
 	return float(numerator) / float(denominator)
 
 
+func _get_arena() -> Node:
+	if char and char.has_method("_find_arena"):
+		return char._find_arena()
+	return null
+
+func _get_arena_size() -> Vector2:
+	var arena := _get_arena()
+	if arena and "arena_size" in arena:
+		return arena.arena_size
+	return Vector2(ARENA_SIZE_X, ARENA_SIZE_Z)
+
+func _get_hill_state() -> Dictionary:
+	var arena := _get_arena()
+	if arena and arena.has_method("get_hill_state"):
+		var my_team: int = char.team if (char and "team" in char) else 0
+		return arena.get_hill_state(my_team)
+	return {"has_hill": false}
+
 func get_obs() -> Dictionary:
 	# Walls come from the raycast ring (geometry is what rays are good for).
-	# Enemies come from the slot sensor: each tracked zombie contributes its
-	# relative position, velocity, health, attack state and stun state.
+	# Enemies come from the slot sensor (5 nearest active slots).
+	# Allies come from AllySensor (5 nearest, or 2 nearest + 3 lowest HP for Medic).
 	var wall_obs: Array = wall_sensor.get_observation()
 	var entity_obs: Array = entity_sensor.get_observation()
 	var ally_obs: Array = ally_sensor.get_observation() if ally_sensor else []
 	if ally_obs.is_empty():
-		ally_obs.resize(28)
+		ally_obs.resize(AllySensor3D.SLOT_SIZE * 5)
 		ally_obs.fill(0.0)
 
 	var result: Array = []
@@ -391,34 +481,87 @@ func get_obs() -> Dictionary:
 	result.append_array(entity_obs)
 	result.append_array(ally_obs)
 
-	_update_approach_reward(entity_obs)
+	var hill := _get_hill_state()
+	if not ("is_dead" in char and char.is_dead):
+		_update_approach_reward(entity_obs)
+	_update_hill_reward(hill)
 	_sample_step_stats()
 
 	# Facing, wrapped to -1..1.
 	var to_aim: Vector3 = char.aim - char.global_position
 	to_aim.y = 0.0
 	var yaw := 0.0
+	var forward := Vector3.FORWARD
 	if to_aim.length_squared() > 0.000001:
+		forward = to_aim.normalized()
 		yaw = wrapf(atan2(-to_aim.x, -to_aim.z), -PI, PI) / PI
+	var right := Vector3(-forward.z, 0.0, forward.x)
+
+	var arena := _get_arena()
+	var arena_sz := _get_arena_size()
+	var local_pos := char.global_position
+	if arena and arena is Node3D:
+		local_pos = arena.to_local(char.global_position)
+	var norm_x := clampf(local_pos.x / maxf(arena_sz.x * 0.5, 1.0), -1.0, 1.0)
+	var norm_z := clampf(local_pos.z / maxf(arena_sz.y * 0.5, 1.0), -1.0, 1.0)
 
 	var role_val: int = char.role if "role" in char else 2
 	var is_tank: float = 1.0 if role_val == 0 else 0.0
 	var is_medic: float = 1.0 if role_val == 1 else 0.0
 	var is_striker: float = 1.0 if role_val == 2 else 0.0
+	var is_basic: float = 1.0 if role_val == 3 else 0.0
 	var lvl: float = float(char.level if "level" in char else 1) / 3.0
 
-	# Self status: health, stamina, arena coordinates, yaw, one-hot role, and level.
+	# Self status: health, stamina, arena coordinates, yaw, one-hot role (4), and level.
 	result.append_array([
 		char.current_health / maxf(char.max_health, 0.001),
 		char.current_stamina / maxf(char.max_stamina, 0.001),
-		char.global_position.x / (ARENA_SIZE_X * 0.5),
-		char.global_position.z / (ARENA_SIZE_Z * 0.5),
+		norm_x,
+		norm_z,
 		yaw,
 		is_tank,
 		is_medic,
 		is_striker,
+		is_basic,
 		lvl,
 	])
+
+	# Option 2 features: actual_speed, is_on_wall, stuck_scalar, active_anchor
+	var speed_ratio: float = clampf(char.actual_speed / 6.0, 0.0, 1.0) if "actual_speed" in char else 0.0
+	var on_wall: float = 1.0 if char.is_on_wall() else 0.0
+	var stuck: float = clampf(char._stuck_timer / 1.5, 0.0, 1.0) if "_stuck_timer" in char else 0.0
+	var anchor_norm: float = float(char.current_anchor) / 8.0 if "current_anchor" in char else 0.0
+	result.append_array([
+		speed_ratio,
+		on_wall,
+		stuck,
+		anchor_norm
+	])
+
+	# Objective / KOTH observations (7 floats): works beyond max_range via arena_size normalization
+	if hill.get("has_hill", false):
+		var h_pos: Vector3 = hill["position"]
+		var h_rad: float = float(hill["radius"])
+		var to_hill := Vector3(h_pos.x - char.global_position.x, 0.0, h_pos.z - char.global_position.z)
+		var h_dist := to_hill.length()
+		var max_map_dist := maxf(arena_sz.length(), 30.0)
+		var ego_x := to_hill.dot(right)
+		var ego_fwd := to_hill.dot(forward)
+		var h_rel_x := clampf(ego_x / max_map_dist, -1.0, 1.0)
+		var h_rel_z := clampf(-ego_fwd / max_map_dist, -1.0, 1.0)
+		var h_dist_norm := clampf(h_dist / max_map_dist, 0.0, 1.0)
+		var in_hill := 1.0 if (h_dist <= h_rad and not ("is_dead" in char and char.is_dead)) else 0.0
+		var owner_rel := float(hill["owner_relative"])
+		var contested := 1.0 if hill["contested"] else 0.0
+		var score_diff := clampf(
+			(float(hill["own_score"]) - float(hill["enemy_score"])) / maxf(float(hill["win_score"]), 1.0),
+			-1.0,
+			1.0
+		)
+		result.append_array([h_rel_x, h_rel_z, h_dist_norm, in_hill, owner_rel, contested, score_diff])
+	else:
+		result.append_array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+
 	return {"obs": result}
 
 # Samples per-step behaviour once per decision step.
@@ -431,12 +574,15 @@ func get_obs() -> Dictionary:
 # behaviour we would expect if the agent had learned to rest for stamina.
 func _sample_step_stats() -> void:
 	_step_total += 1
+	if "is_dead" in char and char.is_dead:
+		_step_attack_requested = false
+		return
 	# Charge for the step itself. See TIME_COST_PER_STEP for why this exists.
 	reward -= TIME_COST_PER_STEP
 	_episode_return -= TIME_COST_PER_STEP
 	if char.current_stamina >= char.max_stamina - 0.01:
 		_step_at_full_stamina += 1
-	var moving: bool = char.requested_move.length_squared() > 0.0001
+	var moving: bool = (char.current_anchor != 6) if ("current_anchor" in char) else (char.requested_move.length_squared() > 0.0001)
 	var attacking: bool = char.is_attacking or _step_attack_requested
 	if not moving and not attacking:
 		_step_idle += 1
@@ -465,6 +611,46 @@ func _sample_step_stats() -> void:
 	if _step_attack_requested:
 		_step_attack += 1
 	_step_attack_requested = false
+
+func _update_hill_reward(hill: Dictionary) -> void:
+	if not hill.get("has_hill", false):
+		return
+	_episode_hill_score_own = float(hill.get("own_score", 0.0))
+	_episode_hill_score_enemy = float(hill.get("enemy_score", 0.0))
+	if "is_dead" in char and char.is_dead:
+		_prev_hill_potential = 0.0
+		return
+
+	var h_pos: Vector3 = hill["position"]
+	var h_rad: float = float(hill["radius"])
+	var dx: float = h_pos.x - char.global_position.x
+	var dz: float = h_pos.z - char.global_position.z
+	var dist := sqrt(dx * dx + dz * dz)
+	var in_hill := dist <= h_rad
+	if in_hill:
+		_episode_hill_steps += 1
+
+	var owner_rel: float = float(hill["owner_relative"])
+	var contested: bool = bool(hill["contested"])
+
+	# Score tick reward while team holds uncontested hill
+	if owner_rel > 0.5 and not contested:
+		reward += HILL_SCORE_TICK_REWARD
+		_episode_return += HILL_SCORE_TICK_REWARD
+
+	# Active capture/contest reward ONLY when contesting or flipping an unowned/enemy hill
+	if in_hill and (contested or owner_rel <= 0.0):
+		reward += HILL_CONTEST_STEP_BONUS
+		_episode_return += HILL_CONTEST_STEP_BONUS
+
+	# Potential-based hill approach shaping when team does NOT control an uncontested hill
+	var cur_potential := 0.0
+	if owner_rel < 0.5 or contested:
+		cur_potential = -maxf(dist - h_rad, 0.0)
+	var shaping := (SHAPING_GAMMA * cur_potential - _prev_hill_potential) * HILL_APPROACH_SHAPING_WEIGHT
+	reward += shaping
+	_episode_return += shaping
+	_prev_hill_potential = cur_potential
 
 # Potential-based shaping: F = gamma * phi(s') - phi(s), with phi = -distance.
 #
@@ -508,20 +694,13 @@ func get_reward() -> float:
 	return reward
 
 func get_action_space() -> Dictionary:
-	# 9-way movement replaces the separate forward/strafe heads. Those were
-	# redundant: char3.gd normalizes the move vector, so forward+strafe moved at
-	# the same speed as forward alone, leaving several distinct action tuples
-	# that behaved identically. 9 x 3 x 2 x 2 x 2 = 216 combinations.
-	#
+	# 9 Tactical Anchors x 2 Attack x 2 Block x 2 Sprint x 3 Combat Stance
 	# KEYS ARE IN ALPHABETICAL ORDER ON PURPOSE -- DO NOT REORDER.
-	# Godot's JSON.stringify emits dictionary keys alphabetically, so the
-	# trainer builds its MultiDiscrete from an alphabetical order. But
-	# sync.gd::_extract_action_dict slices the action array using this live
-	# dictionary's keys() order, which is insertion order. If the two differ,
-	# every action is sliced against the wrong head sizes -- silently, with no
-	# error, because the total count still matches. Declaring the keys
-	# alphabetically makes insertion order equal to wire order.
 	return {
+		"anchor": {
+			"size": 9,
+			"action_type": "discrete"
+		},
 		"attack": {
 			"size": 2,
 			"action_type": "discrete"
@@ -530,15 +709,11 @@ func get_action_space() -> Dictionary:
 			"size": 2,
 			"action_type": "discrete"
 		},
-		"move": {
-			"size": 9,
-			"action_type": "discrete"
-		},
 		"sprint": {
 			"size": 2,
 			"action_type": "discrete"
 		},
-		"turn": {
+		"stance": {
 			"size": 3,
 			"action_type": "discrete"
 		}
@@ -560,27 +735,96 @@ const MOVE_DIRECTIONS: Array[Vector2] = [
 func set_action(action:Dictionary) -> void:
 	if done:
 		return
-	var dir_index: int = clampi(int(action["move"]), 0, MOVE_DIRECTIONS.size() - 1)
-	var dir: Vector2 = MOVE_DIRECTIONS[dir_index]
-	# char.requested_move is (forward, strafe); soldier3.gd maps it to world.
-	char.requested_move = dir
-	# discrete goes from 0 to 2 therefore subtract 1
-	char.requested_turn = action["turn"] - 1.0
-	char.requested_sprint = action["sprint"] == 1
-	char.requested_block = action["block"] == 1
-	if action["attack"] == 1:
+	if action.has("anchor"):
+		char.current_anchor = clampi(int(action["anchor"]), 0, 8)
+	if action.has("stance"):
+		char.current_stance = clampi(int(action["stance"]), 0, 2)
+	char.requested_sprint = (action.get("sprint", 0) == 1)
+	char.requested_block = (action.get("block", 0) == 1)
+	if action.get("attack", 0) == 1:
 		char.attack()
 		# Read by _sample_step_stats() so an attack counts as "not idle" for
 		# this step even if is_attacking has already cleared.
 		_step_attack_requested = true
+	# Legacy fallback if move is provided without anchor
+	if action.has("move") and not action.has("anchor"):
+		var dir_index: int = clampi(int(action["move"]), 0, MOVE_DIRECTIONS.size() - 1)
+		char.requested_move = MOVE_DIRECTIONS[dir_index]
+		char.requested_turn = action.get("turn", 1) - 1.0
 
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
-	if (is_bot or heuristic == "bot") and char and not char.is_dead:
+	if not char or char.is_dead or control_mode == ControlModes.TRAINING:
+		return
+	if policy_source == PolicySource.NEURAL_NETWORK:
+		if _action_repeat_counter <= 0:
+			_current_action = _get_nn_action()
+			_action_repeat_counter = maxi(action_repeat - 1, 0)
+		else:
+			_action_repeat_counter -= 1
+			if _current_action.is_empty():
+				_current_action = get_bot_action()
+		set_action(_current_action)
+	elif policy_source == PolicySource.BOT_HEURISTIC or is_bot or heuristic == "bot":
 		var act := get_bot_action()
 		set_action(act)
 
-## Generates a rule-based squad action matching MultiDiscrete([2, 2, 9, 2, 3]).
+func _get_nn_action() -> Dictionary:
+	var model_path := onnx_model_path
+	if model_path.is_empty() or not FileAccess.file_exists(model_path):
+		if FileAccess.file_exists("res://models/squad_v2_navmesh.onnx"):
+			model_path = "res://models/squad_v2_navmesh.onnx"
+		elif FileAccess.file_exists("res://models/squad_rl_500k.onnx"):
+			model_path = "res://models/squad_rl_500k.onnx"
+		elif FileAccess.file_exists("res://models/frozen_opponent.onnx"):
+			model_path = "res://models/frozen_opponent.onnx"
+		elif FileAccess.file_exists("res://models/bc_squad_pretrained.onnx"):
+			model_path = "res://models/bc_squad_pretrained.onnx"
+		else:
+			return get_bot_action()
+
+	var mtime := FileAccess.get_modified_time(model_path)
+	if _incompatible_onnx_mtimes.get(model_path, -1) == mtime:
+		return get_bot_action()
+	if not _loaded_onnx_models.has(model_path) or _onnx_mtimes.get(model_path, 0) != mtime:
+		_loaded_onnx_models[model_path] = ONNXModel.new(model_path, 1)
+		_onnx_mtimes[model_path] = mtime
+
+	var session: ONNXModel = _loaded_onnx_models[model_path]
+	var obs := get_obs()
+	var res = session.run_inference(obs, 0)
+	if not res or typeof(res) != TYPE_DICTIONARY or not res.has("output") or res["output"].is_empty():
+		_incompatible_onnx_mtimes[model_path] = mtime
+		return get_bot_action()
+
+	var logits: Array = res["output"]
+	# Action space: MultiDiscrete([9, 2, 2, 2, 3]) -> 18 logits
+	# 0:9   anchor (9)
+	# 9:11  attack (2)
+	# 11:13 block (2)
+	# 13:15 sprint (2)
+	# 15:18 stance (3)
+	if logits.size() == 18:
+		return {
+			"anchor": _argmax(logits.slice(0, 9)),
+			"attack": 0 if logits[9] >= logits[10] else 1,
+			"block": 0 if logits[11] >= logits[12] else 1,
+			"sprint": 0 if logits[13] >= logits[14] else 1,
+			"stance": _argmax(logits.slice(15, 18))
+		}
+	_incompatible_onnx_mtimes[model_path] = mtime
+	return get_bot_action()
+
+func _argmax(arr: Array) -> int:
+	var best_idx := 0
+	var best_val: float = arr[0]
+	for i in range(1, arr.size()):
+		if arr[i] > best_val:
+			best_val = arr[i]
+			best_idx = i
+	return best_idx
+
+## Generates a rule-based squad action matching MultiDiscrete([9, 2, 2, 2, 3]).
 func get_bot_action() -> Dictionary:
 	var role_val: int = char.role if "role" in char else 2
 	match role_val:
@@ -588,145 +832,199 @@ func get_bot_action() -> Dictionary:
 			return _get_tank_bot_action()
 		1:
 			return _get_medic_bot_action()
-		2, _:
+		2:
 			return _get_striker_bot_action()
+		3, _:
+			return _get_basic_bot_action()
+
+func _bot_hill_anchor(default_anchor: int) -> int:
+	var hill := _get_hill_state()
+	if not hill.get("has_hill", false):
+		return -1
+	var h_pos: Vector3 = hill["position"]
+	var h_rad: float = float(hill["radius"])
+	var dist := Vector2(char.global_position.x - h_pos.x, char.global_position.z - h_pos.z).length()
+	var owner_rel: float = float(hill["owner_relative"])
+	var contested: bool = bool(hill["contested"])
+	if owner_rel < 0.5 or contested:
+		return 7 if dist > h_rad * 0.85 else default_anchor
+	if dist > h_rad * 1.4:
+		return 8 # GUARD_HILL_PERIMETER
+	return -1
+
+func _get_basic_bot_action() -> Dictionary:
+	var act: Dictionary = {"anchor": 0, "attack": 0, "block": 0, "sprint": 0, "stance": 1}
+	var target: Node3D = char._get_combat_target()
+	var dist: float = char.global_position.distance_to(target.global_position) if target else 999.0
+
+	# 1. Defensive block when enemy swings in melee range
+	if target and ("is_attacking" in target and target.is_attacking) and dist < 2.6:
+		if char.current_stamina >= 12.0:
+			act["block"] = 1
+			act["anchor"] = 6
+			act["stance"] = 1
+			return act
+
+	# 2. KOTH objective priority if far or uncaptured
+	var hill_anchor := _bot_hill_anchor(0)
+	if hill_anchor != -1 and dist > 4.5:
+		act["anchor"] = hill_anchor
+		act["stance"] = 1
+		if char.current_stamina > 30.0:
+			act["sprint"] = 1
+		return act
+
+	# 3. Engage / attack cleanly (no special abilities)
+	if not target:
+		act["anchor"] = 7 if _get_hill_state().get("has_hill", false) else 3
+		return act
+
+	var is_target_blocking: bool = ("is_blocking" in target and target.is_blocking)
+	act["anchor"] = 1 if (is_target_blocking and dist <= 3.5) else 0
+	act["stance"] = 0
+	if dist > 5.0 and char.current_stamina > 35.0:
+		act["sprint"] = 1
+	if dist <= char.attack_range * 0.95 and char.can_attack and char.current_stamina >= 12.0:
+		act["attack"] = 1
+	return act
 
 func _get_tank_bot_action() -> Dictionary:
-	var action: Dictionary = {"attack": 0, "block": 0, "move": 0, "sprint": 0, "turn": 1}
-	if not entity_sensor:
-		return action
+	var act: Dictionary = {"anchor": 0, "attack": 0, "block": 0, "sprint": 0, "stance": 0}
+	var target: Node3D = char._get_combat_target()
+	var dist: float = char.global_position.distance_to(target.global_position) if target else 999.0
+	var injured_ally: Node3D = char._get_lowest_hp_ally()
 
-	var target: Node3D = entity_sensor.nearest_unstunned_target()
-	if not target:
-		target = entity_sensor.nearest_target()
-	if not target:
-		return action
+	# 1. Peel for heavily injured ally
+	if injured_ally and "current_health" in injured_ally and "max_health" in injured_ally:
+		if injured_ally.current_health < injured_ally.max_health * 0.4:
+			act["anchor"] = 4 # SUPPORT_INJURED
+			act["stance"] = 1 # STANDARD
+			if char.current_stamina > 30.0 and dist > 4.0:
+				act["sprint"] = 1
+			if target and dist <= char.attack_range and char.can_attack and char.current_stamina >= 12.0:
+				act["attack"] = 1
+			return act
 
-	var dist: float = char.global_position.distance_to(target.global_position)
-	_steer_towards(target.global_position, action)
+	# 2. Defensive block if enemy attacking nearby
+	if target and ("is_attacking" in target and target.is_attacking) and dist < 2.5:
+		if char.current_stamina >= 10.0:
+			act["block"] = 1
+			act["anchor"] = 6 # HOLD_GROUND
+			act["stance"] = 0
+			return act
 
-	# 1. Reactive defensive block
-	var enemy_attacking: bool = ("is_attacking" in target and target.is_attacking and dist < 2.2)
-	if enemy_attacking and char.current_stamina >= 10.0:
-		action["block"] = 1
-		action["move"] = 5
-		return action
+	# 3. Low stamina recovery / cover
+	if char.current_stamina < 15.0:
+		act["anchor"] = 5 # SEEK_COVER
+		act["stance"] = 2 # KITE
+		return act
 
-	# 2. Shield Bash / Stun attack
+	# 4. Standard engage / push hill
+	var hill_anchor := _bot_hill_anchor(0)
+	if hill_anchor != -1 and dist > 4.0:
+		act["anchor"] = hill_anchor
+		act["stance"] = 0
+		if char.current_stamina > 35.0:
+			act["sprint"] = 1
+		if dist <= char.attack_range * 0.95 and char.can_attack and char.current_stamina >= 12.0:
+			act["attack"] = 1
+		return act
+
+	act["anchor"] = 0 # ENGAGE_TARGET
+	act["stance"] = 0 # MELEE
+	if dist > 5.0 and char.current_stamina > 40.0:
+		act["sprint"] = 1
 	if dist <= char.attack_range * 0.95 and char.can_attack and char.current_stamina >= 12.0:
-		action["attack"] = 1
-		action["move"] = 1
-		return action
+		act["attack"] = 1
 
-	# 3. Close distance
-	if dist > char.attack_range * 0.8:
-		action["move"] = 1
-		if dist > 6.0 and char.current_stamina > 40.0:
-			action["sprint"] = 1
-	else:
-		action["move"] = 0
-
-	return action
+	return act
 
 func _get_medic_bot_action() -> Dictionary:
-	var action: Dictionary = {"attack": 0, "block": 0, "move": 0, "sprint": 0, "turn": 1}
+	var act: Dictionary = {"anchor": 3, "attack": 0, "block": 0, "sprint": 0, "stance": 2}
+	var target: Node3D = char._get_combat_target()
+	var enemy_dist: float = char.global_position.distance_to(target.global_position) if target else 999.0
+	var injured_ally: Node3D = char._get_lowest_hp_ally()
 
-	var injured_ally: Node3D = ally_sensor.nearest_injured_ally() if ally_sensor else null
-	var nearest_enemy: Node3D = entity_sensor.nearest_target() if entity_sensor else null
-	var enemy_dist: float = char.global_position.distance_to(nearest_enemy.global_position) if nearest_enemy else 999.0
+	# 1. If enemy too close (< 3.0m), seek cover / kite
+	if enemy_dist < 3.0:
+		act["anchor"] = 5 # SEEK_COVER
+		act["stance"] = 2 # KITE
+		act["sprint"] = 1
+		if enemy_dist < 1.8 and target and ("is_attacking" in target and target.is_attacking):
+			act["block"] = 1
+		return act
 
-	# 1. Self preservation / kiting if rushed by enemy
-	if enemy_dist < 2.8:
-		if nearest_enemy:
-			_steer_towards(nearest_enemy.global_position, action)
-		action["move"] = 5
-		action["sprint"] = 1
-		if enemy_dist < 1.6 and ("is_attacking" in nearest_enemy and nearest_enemy.is_attacking):
-			action["block"] = 1
-		return action
-
-	# 2. Triage & Heal injured ally
+	# 2. Heal injured ally
 	if injured_ally and "current_health" in injured_ally and "max_health" in injured_ally:
-		var ally_dist: float = char.global_position.distance_to(injured_ally.global_position)
 		var ally_pct: float = injured_ally.current_health / maxf(injured_ally.max_health, 0.001)
-
+		var ally_dist: float = char.global_position.distance_to(injured_ally.global_position)
 		if ally_pct < 0.90:
-			_steer_towards(injured_ally.global_position, action)
-			if ally_dist <= char.heal_range:
-				if char.current_stamina >= 10.0:
-					action["block"] = 1
-					action["move"] = 0
-					return action
-			else:
-				action["move"] = 1
-				if ally_pct < 0.40 and char.current_stamina > 30.0:
-					action["sprint"] = 1
-				return action
+			act["anchor"] = 4 # SUPPORT_INJURED
+			act["stance"] = 1 # STANDARD
+			if ally_dist <= char.heal_range and char.current_stamina >= 10.0:
+				act["block"] = 1 # Block activates heal channel!
+			if ally_pct < 0.45 and char.current_stamina > 30.0:
+				act["sprint"] = 1
+			return act
 
-	# 3. Maintain 4m-7m support distance behind nearest ally
-	var any_ally: Node3D = ally_sensor.nearest_ally() if ally_sensor else null
-	if any_ally:
-		var d: float = char.global_position.distance_to(any_ally.global_position)
-		_steer_towards(any_ally.global_position, action)
-		if d > 7.0:
-			action["move"] = 1
-		elif d < 4.0:
-			action["move"] = 5
-		else:
-			action["move"] = 0
-		return action
+	# 3. Guard hill perimeter or regroup with squad
+	var hill_anchor := _bot_hill_anchor(8)
+	act["anchor"] = 8 if hill_anchor != -1 else 3
+	act["stance"] = 2 # KITE
 
-	# 4. Fallback if isolated / solo
-	if nearest_enemy and enemy_dist <= char.attack_range and char.can_attack and char.current_stamina >= 15.0:
-		_steer_towards(nearest_enemy.global_position, action)
-		action["attack"] = 1
-	elif char.current_health < char.max_health and char.current_stamina >= 20.0:
-		action["block"] = 1
+	# 4. Self defense if isolated
+	if enemy_dist <= char.attack_range and char.can_attack and char.current_stamina >= 15.0:
+		act["attack"] = 1
 
-	return action
+	return act
 
 func _get_striker_bot_action() -> Dictionary:
-	var action: Dictionary = {"attack": 0, "block": 0, "move": 0, "sprint": 0, "turn": 1}
-	if not entity_sensor:
-		return action
-
-	# Priority 1: Stunned enemy for Executioner Strike
-	var target: Node3D = entity_sensor.nearest_stunned_target()
-	var is_execution_target: bool = (target != null)
-
+	var act: Dictionary = {"anchor": 0, "attack": 0, "block": 0, "sprint": 0, "stance": 0}
+	var target: Node3D = char._get_combat_target()
 	if not target:
-		target = entity_sensor.nearest_target()
-	if not target:
-		return action
+		act["anchor"] = 7 if _get_hill_state().get("has_hill", false) else 3 # PUSH_HILL or REGROUP_ALLY
+		return act
 
 	var dist: float = char.global_position.distance_to(target.global_position)
-	_steer_towards(target.global_position, action)
+	var is_target_stunned: bool = ("is_stunned" in target and target.is_stunned)
+	var is_target_blocking: bool = ("is_blocking" in target and target.is_blocking)
 
-	# Execution strike rush
-	if is_execution_target:
+	# 1. Executioner strike on stunned enemy!
+	if is_target_stunned:
+		act["anchor"] = 0 # ENGAGE_TARGET
+		act["stance"] = 0 # MELEE
 		if dist <= char.attack_range * 0.95 and char.can_attack and char.current_stamina >= 12.0:
-			action["attack"] = 1
-			action["move"] = 1
-			return action
+			act["attack"] = 1
 		elif dist > char.attack_range:
-			action["move"] = 1
-			action["sprint"] = 1
-			return action
+			act["sprint"] = 1
+		return act
 
-	# Standard engagement
+	# 2. Flank if target is actively blocking
+	if is_target_blocking and dist < 3.5:
+		act["anchor"] = 1 # FLANK_TARGET
+		act["stance"] = 0 # MELEE
+		if dist <= char.attack_range * 0.95 and char.can_attack and char.current_stamina >= 12.0:
+			act["attack"] = 1
+		return act
+
+	# 3. Low HP retreat
+	var hp_pct: float = char.current_health / maxf(char.max_health, 0.001)
+	if hp_pct < 0.30 and char.current_stamina < 20.0:
+		act["anchor"] = 5 # SEEK_COVER
+		act["stance"] = 2 # KITE
+		return act
+
+	# 4. Standard engage
+	act["anchor"] = 0 # ENGAGE_TARGET
+	act["stance"] = 0 # MELEE
+	if dist > 5.0 and char.current_stamina > 40.0:
+		act["sprint"] = 1
 	if dist <= char.attack_range * 0.95 and char.can_attack and char.current_stamina >= 15.0:
-		action["attack"] = 1
-		action["move"] = 1
-		return action
-	elif dist > char.attack_range * 0.8:
-		action["move"] = 1
-		if dist > 5.0 and char.current_stamina > 40.0:
-			action["sprint"] = 1
-	else:
-		if char.current_stamina < 15.0:
-			action["move"] = 5
+		act["attack"] = 1
+	elif dist <= char.attack_range and is_target_blocking:
+		act["anchor"] = 1 # FLANK_TARGET
 
-	return action
+	return act
 
 func _steer_towards(target_pos: Vector3, action: Dictionary) -> void:
 	var face: Vector3 = char.aim - char.global_position

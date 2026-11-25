@@ -33,7 +33,7 @@ const SLOT_SIZE := 10
 const MAX_SPEED := 10.0
 
 ## How many entities to track. Beyond this, the nearest are kept.
-@export var max_slots: int = 10
+@export var max_slots: int = 5
 ## Detection radius in metres. Entities outside this are not perceived.
 @export var max_range: float = 30.0
 ## Group name to scan for. Zombies join "Zombie" via their node name; using a
@@ -159,15 +159,47 @@ func _refresh_slots() -> void:
 			_slots[i] = null
 			_slot_of.erase(entity)
 
-	# Admit new entities nearest-first so the most relevant get slots.
+	# Admit new entities nearest-first; if full, preempt out-of-range or farther slots.
 	for entity in candidates:
 		if not in_range.has(entity) or _slot_of.has(entity):
 			continue
 		var free := _slots.find(null)
-		if free == -1:
+		if free != -1:
+			_slots[free] = entity
+			_slot_of[entity] = free
+			continue
+		var evict_idx := _find_evictable_slot(_distance_to(entity), in_range)
+		if evict_idx == -1:
 			break
-		_slots[free] = entity
-		_slot_of[entity] = free
+		var old_entity = _slots[evict_idx]
+		if old_entity != null:
+			_slot_of.erase(old_entity)
+		_slots[evict_idx] = entity
+		_slot_of[entity] = evict_idx
+
+
+func _find_evictable_slot(candidate_dist: float, in_range: Dictionary) -> int:
+	var best_idx := -1
+	var worst_remembered_dist := -1.0
+	var worst_in_range_idx := -1
+	var worst_in_range_dist := -1.0
+	for i in max_slots:
+		var slot_entity = _slots[i]
+		if slot_entity == null or not is_instance_valid(slot_entity):
+			return i
+		var d: float = _distance_to(slot_entity)
+		if not in_range.has(slot_entity):
+			if d > worst_remembered_dist:
+				worst_remembered_dist = d
+				best_idx = i
+		elif d > worst_in_range_dist:
+			worst_in_range_dist = d
+			worst_in_range_idx = i
+	if best_idx != -1:
+		return best_idx
+	if worst_in_range_idx != -1 and candidate_dist + 0.5 < worst_in_range_dist:
+		return worst_in_range_idx
+	return -1
 
 
 func _collect_candidates() -> Array:

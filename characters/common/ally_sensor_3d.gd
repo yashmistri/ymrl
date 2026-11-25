@@ -4,8 +4,10 @@ class_name AllySensor3D
 
 ## Slot-based ally perception for squad coordination.
 ##
-## Tracks squad teammates in the "soldier" group, excluding the parent entity.
-## Each slot contains 14 floats (all normalized to [-1, 1] or [0, 1]):
+## Tracks squad teammates in the target_group, excluding the parent entity.
+## Normal roles keep the 5 nearest living allies; Medics keep the 2 nearest
+## living allies plus the 3 lowest-HP remaining allies.
+## Each slot contains 15 floats (all normalized to [-1, 1] or [0, 1]):
 ##   0  rel_x / max_range       left/right offset, ego-relative
 ##   1  rel_z / max_range       forward/back offset, ego-relative
 ##   2  distance / max_range    0 = touching, 1 = max_range
@@ -17,14 +19,16 @@ class_name AllySensor3D
 ##   8  is_tank                 1.0 if Tank, else 0.0
 ##   9  is_medic                1.0 if Medic, else 0.0
 ##   10 is_striker              1.0 if Striker, else 0.0
-##   11 level / 3.0             normalized level (0.33, 0.66, 1.0)
-##   12 is_blocking             1.0 if holding block / channeling heal
-##   13 is_visible              1.0 if alive and in range, 0.0 if empty/dead
+##   11 is_basic                1.0 if Basic, else 0.0
+##   12 level / 3.0             normalized level (0.33, 0.66, 1.0)
+##   13 is_blocking             1.0 if holding block / channeling heal
+##   14 is_visible              1.0 if alive and in range, 0.0 if empty/dead
 
-const SLOT_SIZE := 14
+const SLOT_SIZE := 15
 const MAX_SPEED := 10.0
 
-@export var max_slots: int = 2
+@export var max_slots: int = 5
+@export var medic_nearest_slots: int = 2
 @export var max_range: float = 30.0
 @export var target_group: String = "soldier"
 
@@ -98,32 +102,73 @@ func _refresh_slots() -> void:
 	_last_refresh_frame = cur_frame
 
 	var candidates := _collect_candidates()
-	var in_range := {}
+	var in_range_list: Array[Node3D] = []
 	for entity in candidates:
+		if "is_dead" in entity and entity.is_dead:
+			continue
 		if _distance_to(entity) <= max_range:
-			in_range[entity] = true
+			in_range_list.append(entity)
 
-	# Drop dead, freed, or out-of-range allies
+	var parent_node := get_parent()
+	var is_medic: bool = (parent_node != null and "role" in parent_node and int(parent_node.role) == 1)
+
+	var desired_set := {}
+	var desired_list: Array[Node3D] = []
+	if is_medic:
+		var near_cap := mini(medic_nearest_slots, max_slots)
+		for entity in in_range_list:
+			if desired_list.size() >= near_cap:
+				break
+			desired_list.append(entity)
+			desired_set[entity] = true
+
+		if desired_list.size() < max_slots:
+			var by_hp := in_range_list.duplicate()
+			by_hp.sort_custom(func(a, b):
+				var ha := _hp_ratio(a)
+				var hb := _hp_ratio(b)
+				if absf(ha - hb) > 0.001:
+					return ha < hb
+				return _distance_to(a) < _distance_to(b)
+			)
+			for entity in by_hp:
+				if desired_list.size() >= max_slots:
+					break
+				if desired_set.has(entity):
+					continue
+				desired_list.append(entity)
+				desired_set[entity] = true
+	else:
+		for entity in in_range_list:
+			if desired_list.size() >= max_slots:
+				break
+			desired_list.append(entity)
+			desired_set[entity] = true
+
+	# Drop dead, freed, out-of-range, or evicted allies
 	for i in max_slots:
 		var entity = _slots[i]
 		if entity == null:
 			continue
-		if not is_instance_valid(entity) or ("is_dead" in entity and entity.is_dead):
-			_slots[i] = null
-			_slot_of.erase(entity)
-		elif not in_range.has(entity):
+		if not is_instance_valid(entity) or not desired_set.has(entity):
 			_slots[i] = null
 			_slot_of.erase(entity)
 
-	# Admit nearest candidates first
-	for entity in candidates:
-		if not in_range.has(entity) or _slot_of.has(entity):
+	# Admit desired teammates while preserving existing slot indices
+	for entity in desired_list:
+		if _slot_of.has(entity):
 			continue
 		var free: int = _slots.find(null)
 		if free == -1:
 			break
 		_slots[free] = entity
 		_slot_of[entity] = free
+
+
+func _hp_ratio(entity: Node3D) -> float:
+	var max_h: float = entity.max_health if "max_health" in entity else 1.0
+	var cur_h: float = entity.current_health if "current_health" in entity else max_h
+	return cur_h / maxf(max_h, 0.001)
 
 func _collect_candidates() -> Array:
 	var out: Array = []
@@ -172,6 +217,7 @@ func _slot_values(entity: Node3D) -> Array:
 	var is_tank: float = 1.0 if role_val == 0 else 0.0
 	var is_medic: float = 1.0 if role_val == 1 else 0.0
 	var is_striker: float = 1.0 if role_val == 2 else 0.0
+	var is_basic: float = 1.0 if role_val == 3 else 0.0
 
 	var lvl: float = float(entity.level if "level" in entity else 1) / 3.0
 	var blocking: float = 1.0 if ("is_blocking" in entity and entity.is_blocking) else 0.0
@@ -189,6 +235,7 @@ func _slot_values(entity: Node3D) -> Array:
 		is_tank,
 		is_medic,
 		is_striker,
+		is_basic,
 		lvl,
 		blocking,
 		visible_now,

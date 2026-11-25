@@ -1,30 +1,8 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://xrhed4xit0wm"]
 
-[ext_resource type="Script" path="res://scenes/3d/main_3.gd" id="1_r6fop"]
+[ext_resource type="Script" uid="uid://1cl4dbv1tjtq" path="res://scenes/3d/main_3.gd" id="1_r6fop"]
 [ext_resource type="PackedScene" path="res://characters/soldier3/soldier3.tscn" id="2_5tyq8"]
 [ext_resource type="PackedScene" path="res://ui/squad_hud.tscn" id="3_hud"]
-
-[sub_resource type="BoxMesh" id="BoxMesh_hlpfh"]
-size = Vector3(50, 1, 50)
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_5tyq8"]
-size = Vector3(50, 1, 50)
-
-[sub_resource type="BoxMesh" id="BoxMesh_5tyq8"]
-size = Vector3(1, 5, 50)
-
-[sub_resource type="BoxShape3D" id="BoxShape3D_hlpfh"]
-size = Vector3(1, 5, 50)
-
-[sub_resource type="SphereMesh" id="SphereMesh_hlpfh"]
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
-shading_mode = 0
-albedo_color = Color(0.72, 0.73, 0.75, 1)
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wall"]
-shading_mode = 0
-albedo_color = Color(0.32, 0.36, 0.44, 1)
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_squad"]
 sky_top_color = Color(0.38, 0.48, 0.68, 1)
@@ -42,122 +20,130 @@ ambient_light_source = 2
 ambient_light_color = Color(0.55, 0.57, 0.62, 1)
 tonemap_mode = 2
 
-[node name="SquadArena" type="Node3D"]
+[sub_resource type="BoxMesh" id="BoxMesh_hlpfh"]
+size = Vector3(50, 1, 50)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
+shading_mode = 0
+albedo_color = Color(0.72, 0.73, 0.75, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_5tyq8"]
+size = Vector3(50, 1, 50)
+
+[sub_resource type="BoxMesh" id="BoxMesh_5tyq8"]
+size = Vector3(1, 5, 50)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wall"]
+shading_mode = 0
+albedo_color = Color(0.32, 0.36, 0.44, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_hlpfh"]
+size = Vector3(1, 5, 50)
+
+[sub_resource type="SphereMesh" id="SphereMesh_hlpfh"]
+
+[node name="SquadArena" type="Node3D" unique_id=1517827759]
 script = ExtResource("1_r6fop")
 squad_bots = true
 zombies_per_episode = 8
 min_spawn_distance = 6.0
-max_spawn_distance = 22.0
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=368830164]
 environment = SubResource("Environment_squad")
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1328476997]
 transform = Transform3D(0.866025, -0.353553, 0.353553, 0, 0.707107, 0.707107, -0.5, -0.612372, 0.612372, 0, 20, 0)
 light_color = Color(1, 0.98, 0.94, 1)
 light_energy = 1.2
 shadow_enabled = true
 
-[node name="Floor" type="StaticBody3D" parent="."]
+[node name="Floor" type="StaticBody3D" parent="." unique_id=1781605446]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
 collision_mask = 3
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Floor"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Floor" unique_id=756667546]
 mesh = SubResource("BoxMesh_hlpfh")
 surface_material_override/0 = SubResource("StandardMaterial3D_floor")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Floor"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Floor" unique_id=1990142308]
 shape = SubResource("BoxShape3D_5tyq8")
 
-[node name="wall1" type="StaticBody3D" parent="."]
+[node name="wall1" type="StaticBody3D" parent="." unique_id=2141025515]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, -0.5, 0)
 collision_mask = 3
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="wall1"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="wall1" unique_id=641423403]
 mesh = SubResource("BoxMesh_5tyq8")
 surface_material_override/0 = SubResource("StandardMaterial3D_wall")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="wall1"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="wall1" unique_id=1621864962]
 shape = SubResource("BoxShape3D_hlpfh")
 
-[node name="wall2" type="StaticBody3D" parent="."]
+[node name="wall2" type="StaticBody3D" parent="." unique_id=509794669]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, -0.5, 0)
 collision_mask = 3
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="wall2"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="wall2" unique_id=1052962492]
 mesh = SubResource("BoxMesh_5tyq8")
 surface_material_override/0 = SubResource("StandardMaterial3D_wall")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="wall2"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="wall2" unique_id=715791745]
 shape = SubResource("BoxShape3D_hlpfh")
 
-[node name="wall3" type="StaticBody3D" parent="."]
+[node name="wall3" type="StaticBody3D" parent="." unique_id=979639732]
 transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, 0, -0.5, 25)
 collision_mask = 3
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="wall3"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="wall3" unique_id=925534377]
 mesh = SubResource("BoxMesh_5tyq8")
 surface_material_override/0 = SubResource("StandardMaterial3D_wall")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="wall3"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="wall3" unique_id=463746381]
 shape = SubResource("BoxShape3D_hlpfh")
 
-[node name="wall4" type="StaticBody3D" parent="."]
+[node name="wall4" type="StaticBody3D" parent="." unique_id=384286975]
 transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, 0, -0.5, -25)
 collision_mask = 3
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="wall4"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="wall4" unique_id=1756339725]
 mesh = SubResource("BoxMesh_5tyq8")
 surface_material_override/0 = SubResource("StandardMaterial3D_wall")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="wall4"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="wall4" unique_id=177532358]
 shape = SubResource("BoxShape3D_hlpfh")
 
-[node name="Camera3D" type="Camera3D" parent="."]
+[node name="Camera3D" type="Camera3D" parent="." unique_id=663287178]
 transform = Transform3D(1, 0, 0, 0, 0.820545, 0.571582, 0, -0.571582, 0.820545, 0, 25.4533, 45.5422)
-fov = 30.1
 current = true
+fov = 45.4
 
-[node name="Cursor" type="MeshInstance3D" parent="."]
+[node name="Cursor" type="MeshInstance3D" parent="." unique_id=1688934716]
 visible = false
 mesh = SubResource("SphereMesh_hlpfh")
 
-[node name="EpisodeTimer" type="Timer" parent="."]
+[node name="EpisodeTimer" type="Timer" parent="." unique_id=1084346548]
 wait_time = 90.0
 one_shot = true
 autostart = true
 
-[node name="SpawnTimer" type="Timer" parent="."]
+[node name="SpawnTimer" type="Timer" parent="." unique_id=696172543]
 wait_time = 4.0
 
-[node name="Soldier_Tank" parent="." instance=ExtResource("2_5tyq8")]
+[node name="Soldier_Tank" parent="." unique_id=263031808 instance=ExtResource("2_5tyq8")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 1, 0)
 role = 0
 level = 2
-is_bot = true
 
-[node name="AI" parent="Soldier_Tank"]
-is_bot = true
-
-[node name="Soldier_Medic" parent="." instance=ExtResource("2_5tyq8")]
+[node name="Soldier_Medic" parent="." unique_id=685322623 instance=ExtResource("2_5tyq8")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 3)
 role = 1
 level = 2
-is_bot = true
 
-[node name="AI" parent="Soldier_Medic"]
-is_bot = true
-
-[node name="Soldier_Striker" parent="." instance=ExtResource("2_5tyq8")]
+[node name="Soldier_Striker" parent="." unique_id=845090151 instance=ExtResource("2_5tyq8")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 1, 0)
-role = 2
 level = 2
-is_bot = true
 
-[node name="AI" parent="Soldier_Striker"]
-is_bot = true
-
-[node name="SquadHUD" parent="." instance=ExtResource("3_hud")]
+[node name="SquadHUD" parent="." unique_id=1127994196 instance=ExtResource("3_hud")]
 
 [connection signal="timeout" from="EpisodeTimer" to="." method="_on_episode_timer_timeout"]
 [connection signal="timeout" from="SpawnTimer" to="." method="_on_spawn_timer_timeout"]

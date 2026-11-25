@@ -67,6 +67,11 @@ METRIC_KEYS = (
     "executions",
     "team_kills",
     "team_deaths",
+    # koth objective
+    "hill_fraction",
+    "hill_score_own",
+    "hill_score_enemy",
+    "koth_win",
     # behaviour distribution
     "idle_fraction",
     "full_stamina_fraction",
@@ -306,7 +311,12 @@ def main() -> int:
 
     env = build_env(args)
     try:
-        model = PPO.load(model_path, env=env, device="auto")
+        model = PPO.load(
+            model_path,
+            env=env,
+            device="auto",
+            custom_objects={"observation_space": env.observation_space},
+        )
         summary = run_episodes(
             model, env, args.episodes, args.max_steps, not args.stochastic,
             verbose_info=args.verbose_info,

@@ -1,0 +1,544 @@
+[gd_scene format=3 uid="uid://dbattle781923"]
+
+[ext_resource type="Script" path="res://scenes/3d/squad_battle.gd" id="1_battle"]
+[ext_resource type="PackedScene" path="res://characters/soldier3/soldier3.tscn" id="2_soldier"]
+[ext_resource type="Script" path="res://scenes/components/camera_controller.gd" id="3_cam"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_floor"]
+size = Vector3(50, 1, 50)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
+size = Vector3(50, 1, 50)
+
+[sub_resource type="BoxMesh" id="BoxMesh_wall"]
+size = Vector3(1, 5, 50)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wall"]
+size = Vector3(1, 5, 50)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_floor"]
+shading_mode = 0
+albedo_color = Color(0.7, 0.72, 0.75, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_wall"]
+shading_mode = 0
+albedo_color = Color(0.3, 0.35, 0.42, 1)
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_battle"]
+sky_top_color = Color(0.35, 0.45, 0.65, 1)
+sky_horizon_color = Color(0.65, 0.7, 0.76, 1)
+ground_bottom_color = Color(0.2, 0.22, 0.25, 1)
+ground_horizon_color = Color(0.65, 0.7, 0.76, 1)
+
+[sub_resource type="Sky" id="Sky_battle"]
+sky_material = SubResource("ProceduralSkyMaterial_battle")
+
+[sub_resource type="Environment" id="Environment_battle"]
+background_mode = 2
+sky = SubResource("Sky_battle")
+ambient_light_source = 2
+ambient_light_color = Color(0.55, 0.58, 0.65, 1)
+tonemap_mode = 2
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_banner"]
+bg_color = Color(0.08, 0.1, 0.14, 0.8)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+expand_margin_left = 12.0
+expand_margin_top = 6.0
+expand_margin_right = 12.0
+expand_margin_bottom = 6.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
+bg_color = Color(0.12, 0.14, 0.18, 0.75)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+content_margin_left = 8.0
+content_margin_top = 4.0
+content_margin_right = 8.0
+content_margin_bottom = 4.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp_fill_blue"]
+bg_color = Color(0.2, 0.55, 1, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp_fill_red"]
+bg_color = Color(0.95, 0.25, 0.25, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hp_bg"]
+bg_color = Color(0.18, 0.2, 0.25, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+
+[node name="SquadBattle" type="Node3D"]
+script = ExtResource("1_battle")
+round_duration = 60.0
+onnx_model_path = "res://models/squad_rl_500k.onnx"
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_battle")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866025, -0.353553, 0.353553, 0, 0.707107, 0.707107, -0.5, -0.612372, 0.612372, 0, 20, 0)
+light_color = Color(1, 0.98, 0.94, 1)
+light_energy = 1.2
+shadow_enabled = true
+
+[node name="Floor" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+collision_mask = 7
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Floor"]
+mesh = SubResource("BoxMesh_floor")
+surface_material_override/0 = SubResource("StandardMaterial3D_floor")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Floor"]
+shape = SubResource("BoxShape3D_floor")
+
+[node name="wall1" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, -0.5, 0)
+collision_mask = 7
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="wall1"]
+mesh = SubResource("BoxMesh_wall")
+surface_material_override/0 = SubResource("StandardMaterial3D_wall")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="wall1"]
+shape = SubResource("BoxShape3D_wall")
+
+[node name="wall2" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, -0.5, 0)
+collision_mask = 7
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="wall2"]
+mesh = SubResource("BoxMesh_wall")
+surface_material_override/0 = SubResource("StandardMaterial3D_wall")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="wall2"]
+shape = SubResource("BoxShape3D_wall")
+
+[node name="wall3" type="StaticBody3D" parent="."]
+transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, 0, -0.5, 25)
+collision_mask = 7
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="wall3"]
+mesh = SubResource("BoxMesh_wall")
+surface_material_override/0 = SubResource("StandardMaterial3D_wall")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="wall3"]
+shape = SubResource("BoxShape3D_wall")
+
+[node name="wall4" type="StaticBody3D" parent="."]
+transform = Transform3D(-4.37114e-08, 0, 1, 0, 1, 0, -1, 0, -4.37114e-08, 0, -0.5, -25)
+collision_mask = 7
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="wall4"]
+mesh = SubResource("BoxMesh_wall")
+surface_material_override/0 = SubResource("StandardMaterial3D_wall")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="wall4"]
+shape = SubResource("BoxShape3D_wall")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.766044, 0.642788, 0, -0.642788, 0.766044, 0, 27, 26)
+current = true
+fov = 42.0
+script = ExtResource("3_cam")
+
+[node name="RoundTimer" type="Timer" parent="."]
+wait_time = 60.0
+one_shot = true
+
+[node name="Blue_Tank" parent="." instance=ExtResource("2_soldier")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 1, 8)
+role = 0
+level = 2
+team = 0
+is_bot = true
+use_nn = true
+
+[node name="Blue_Medic" parent="." instance=ExtResource("2_soldier")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 12)
+role = 1
+level = 2
+team = 0
+is_bot = true
+use_nn = true
+
+[node name="Blue_Striker" parent="." instance=ExtResource("2_soldier")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 1, 8)
+role = 2
+level = 2
+team = 0
+is_bot = true
+use_nn = true
+
+[node name="Red_Tank" parent="." instance=ExtResource("2_soldier")]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 3, 1, -8)
+role = 0
+level = 2
+team = 1
+is_bot = true
+use_nn = true
+
+[node name="Red_Medic" parent="." instance=ExtResource("2_soldier")]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, 0, 1, -12)
+role = 1
+level = 2
+team = 1
+is_bot = true
+use_nn = true
+
+[node name="Red_Striker" parent="." instance=ExtResource("2_soldier")]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, 0, 8.74228e-08, 0, -1, -3, 1, -8)
+role = 2
+level = 2
+team = 1
+is_bot = true
+use_nn = true
+
+[node name="BattleHUD" type="CanvasLayer" parent="."]
+
+[node name="Margin" type="MarginContainer" parent="BattleHUD"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 16
+
+[node name="TopBar" type="HBoxContainer" parent="BattleHUD/Margin"]
+layout_mode = 2
+size_flags_vertical = 0
+alignment = 1
+
+[node name="ScoreBox" type="HBoxContainer" parent="BattleHUD/Margin/TopBar"]
+layout_mode = 2
+size_flags_horizontal = 6
+theme_override_constants/separation = 12
+
+[node name="Panel" type="PanelContainer" parent="BattleHUD/Margin/TopBar/ScoreBox"]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_banner")
+
+[node name="HBox" type="HBoxContainer" parent="BattleHUD/Margin/TopBar/ScoreBox/Panel"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="BlueLabel" type="Label" parent="BattleHUD/Margin/TopBar/ScoreBox/Panel/HBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.25, 0.6, 1, 1)
+theme_override_font_sizes/font_size = 20
+text = "BLUE"
+
+[node name="BlueScore" type="Label" parent="BattleHUD/Margin/TopBar/ScoreBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3, 0.7, 1, 1)
+theme_override_font_sizes/font_size = 32
+text = "0"
+
+[node name="VSLabel" type="Label" parent="BattleHUD/Margin/TopBar/ScoreBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.65, 0.75, 1)
+theme_override_font_sizes/font_size = 22
+text = "VS"
+
+[node name="RedScore" type="Label" parent="BattleHUD/Margin/TopBar/ScoreBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 32
+text = "0"
+
+[node name="RedLabel" type="Label" parent="BattleHUD/Margin/TopBar/ScoreBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+theme_override_font_sizes/font_size = 20
+text = "RED"
+
+[node name="RoundLabel" type="Label" parent="BattleHUD/Margin/TopBar/ScoreBox"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.92, 0.95, 1)
+theme_override_font_sizes/font_size = 18
+text = "ROUND 1"
+
+[node name="TimerLabel" type="Label" parent="BattleHUD/Margin/TopBar"]
+layout_mode = 2
+size_flags_horizontal = 8
+theme_override_colors/font_color = Color(0.85, 0.88, 0.92, 1)
+theme_override_font_sizes/font_size = 18
+text = "TIME: 60.0s"
+
+[node name="BottomRow" type="HBoxContainer" parent="BattleHUD/Margin"]
+layout_mode = 2
+size_flags_vertical = 8
+
+[node name="BluePanel" type="VBoxContainer" parent="BattleHUD/Margin/BottomRow"]
+layout_mode = 2
+size_flags_horizontal = 2
+theme_override_constants/separation = 6
+
+[node name="BlueTitle" type="Label" parent="BattleHUD/Margin/BottomRow/BluePanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.3, 0.65, 1, 1)
+theme_override_font_sizes/font_size = 15
+text = "BLUE SQUAD (NN INFERENCE)"
+
+[node name="BlueList" type="VBoxContainer" parent="BattleHUD/Margin/BottomRow/BluePanel"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="TankCard" type="PanelContainer" parent="BattleHUD/Margin/BottomRow/BluePanel/BlueList"]
+custom_minimum_size = Vector2(180, 0)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="VBox" type="VBoxContainer" parent="BattleHUD/Margin/BottomRow/BluePanel/BlueList/TankCard"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="HPRow" type="HBoxContainer" parent="BattleHUD/Margin/BottomRow/BluePanel/BlueList/TankCard/VBox"]
+layout_mode = 2
+
+[node name="Name" type="Label" parent="BattleHUD/Margin/BottomRow/BluePanel/BlueList/TankCard/VBox/HPRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.35, 0.65, 1, 1)
+theme_override_font_sizes/font_size = 13
+text = "Tank"
+
+[node name="HPVal" type="Label" parent="BattleHUD/Margin/BottomRow/BluePanel/BlueList/TankCard/VBox/HPRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "250"
+
+[node name="HPBar" type="ProgressBar" parent="BattleHUD/Margin/BottomRow/BluePanel/BlueList/TankCard/VBox"]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_hp_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_hp_fill_blue")
+value = 100.0
+show_percentage = false
+
+[node name="MedicCard" type="PanelContainer" parent="BattleHUD/Margin/BottomRow/BluePanel/BlueList"]
+custom_minimum_size = Vector2(180, 0)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="VBox" type="VBoxContainer" parent="BattleHUD/Margin/BottomRow/BluePanel/BlueList/MedicCard"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="HPRow" type="HBoxContainer" parent="BattleHUD/Margin/BottomRow/BluePanel/BlueList/MedicCard/VBox"]
+layout_mode = 2
+
+[node name="Name" type="Label" parent="BattleHUD/Margin/BottomRow/BluePanel/BlueList/MedicCard/VBox/HPRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.3, 0.9, 0.5, 1)
+theme_override_font_sizes/font_size = 13
+text = "Medic"
+
+[node name="HPVal" type="Label" parent="BattleHUD/Margin/BottomRow/BluePanel/BlueList/MedicCard/VBox/HPRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "140"
+
+[node name="HPBar" type="ProgressBar" parent="BattleHUD/Margin/BottomRow/BluePanel/BlueList/MedicCard/VBox"]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_hp_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_hp_fill_blue")
+value = 100.0
+show_percentage = false
+
+[node name="StrikerCard" type="PanelContainer" parent="BattleHUD/Margin/BottomRow/BluePanel/BlueList"]
+custom_minimum_size = Vector2(180, 0)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="VBox" type="VBoxContainer" parent="BattleHUD/Margin/BottomRow/BluePanel/BlueList/StrikerCard"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="HPRow" type="HBoxContainer" parent="BattleHUD/Margin/BottomRow/BluePanel/BlueList/StrikerCard/VBox"]
+layout_mode = 2
+
+[node name="Name" type="Label" parent="BattleHUD/Margin/BottomRow/BluePanel/BlueList/StrikerCard/VBox/HPRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 0.45, 0.25, 1)
+theme_override_font_sizes/font_size = 13
+text = "Striker"
+
+[node name="HPVal" type="Label" parent="BattleHUD/Margin/BottomRow/BluePanel/BlueList/StrikerCard/VBox/HPRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "190"
+
+[node name="HPBar" type="ProgressBar" parent="BattleHUD/Margin/BottomRow/BluePanel/BlueList/StrikerCard/VBox"]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_hp_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_hp_fill_blue")
+value = 100.0
+show_percentage = false
+
+[node name="RedPanel" type="VBoxContainer" parent="BattleHUD/Margin/BottomRow"]
+layout_mode = 2
+size_flags_horizontal = 10
+theme_override_constants/separation = 6
+
+[node name="RedTitle" type="Label" parent="BattleHUD/Margin/BottomRow/RedPanel"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.35, 0.35, 1)
+theme_override_font_sizes/font_size = 15
+text = "RED SQUAD (NN INFERENCE)"
+horizontal_alignment = 2
+
+[node name="RedList" type="VBoxContainer" parent="BattleHUD/Margin/BottomRow/RedPanel"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="TankCard" type="PanelContainer" parent="BattleHUD/Margin/BottomRow/RedPanel/RedList"]
+custom_minimum_size = Vector2(180, 0)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="VBox" type="VBoxContainer" parent="BattleHUD/Margin/BottomRow/RedPanel/RedList/TankCard"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="HPRow" type="HBoxContainer" parent="BattleHUD/Margin/BottomRow/RedPanel/RedList/TankCard/VBox"]
+layout_mode = 2
+
+[node name="Name" type="Label" parent="BattleHUD/Margin/BottomRow/RedPanel/RedList/TankCard/VBox/HPRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 0.35, 0.35, 1)
+theme_override_font_sizes/font_size = 13
+text = "Tank"
+
+[node name="HPVal" type="Label" parent="BattleHUD/Margin/BottomRow/RedPanel/RedList/TankCard/VBox/HPRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "250"
+
+[node name="HPBar" type="ProgressBar" parent="BattleHUD/Margin/BottomRow/RedPanel/RedList/TankCard/VBox"]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_hp_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_hp_fill_red")
+value = 100.0
+show_percentage = false
+
+[node name="MedicCard" type="PanelContainer" parent="BattleHUD/Margin/BottomRow/RedPanel/RedList"]
+custom_minimum_size = Vector2(180, 0)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="VBox" type="VBoxContainer" parent="BattleHUD/Margin/BottomRow/RedPanel/RedList/MedicCard"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="HPRow" type="HBoxContainer" parent="BattleHUD/Margin/BottomRow/RedPanel/RedList/MedicCard/VBox"]
+layout_mode = 2
+
+[node name="Name" type="Label" parent="BattleHUD/Margin/BottomRow/RedPanel/RedList/MedicCard/VBox/HPRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.9, 0.35, 0.85, 1)
+theme_override_font_sizes/font_size = 13
+text = "Medic"
+
+[node name="HPVal" type="Label" parent="BattleHUD/Margin/BottomRow/RedPanel/RedList/MedicCard/VBox/HPRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "140"
+
+[node name="HPBar" type="ProgressBar" parent="BattleHUD/Margin/BottomRow/RedPanel/RedList/MedicCard/VBox"]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_hp_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_hp_fill_red")
+value = 100.0
+show_percentage = false
+
+[node name="StrikerCard" type="PanelContainer" parent="BattleHUD/Margin/BottomRow/RedPanel/RedList"]
+custom_minimum_size = Vector2(180, 0)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="VBox" type="VBoxContainer" parent="BattleHUD/Margin/BottomRow/RedPanel/RedList/StrikerCard"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="HPRow" type="HBoxContainer" parent="BattleHUD/Margin/BottomRow/RedPanel/RedList/StrikerCard/VBox"]
+layout_mode = 2
+
+[node name="Name" type="Label" parent="BattleHUD/Margin/BottomRow/RedPanel/RedList/StrikerCard/VBox/HPRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 0.75, 0.2, 1)
+theme_override_font_sizes/font_size = 13
+text = "Striker"
+
+[node name="HPVal" type="Label" parent="BattleHUD/Margin/BottomRow/RedPanel/RedList/StrikerCard/VBox/HPRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "190"
+
+[node name="HPBar" type="ProgressBar" parent="BattleHUD/Margin/BottomRow/RedPanel/RedList/StrikerCard/VBox"]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_hp_bg")
+theme_override_styles/fill = SubResource("StyleBoxFlat_hp_fill_red")
+value = 100.0
+show_percentage = false
+
+[node name="CenterAnnouncement" type="Control" parent="BattleHUD"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Label" type="Label" parent="BattleHUD/CenterAnnouncement"]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -60.0
+offset_right = 300.0
+offset_bottom = 60.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.8)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 2
+theme_override_constants/shadow_outline_size = 4
+theme_override_font_sizes/font_size = 36
+text = "BLUE SQUAD WINS!"
+horizontal_alignment = 1
+vertical_alignment = 1

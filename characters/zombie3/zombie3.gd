@@ -28,7 +28,7 @@ var requested_move:Vector2
 var is_running:bool=false
 var is_stunned:bool=false
 var _stun_timer:float=0.0
-var _stun_indicator:MeshInstance3D
+@onready var _stun_indicator:MeshInstance3D = get_node_or_null("StunIndicator")
 var spawn_pos:Vector3
 var target:Node3D
 
@@ -43,20 +43,10 @@ func _ready():
 	super._ready()
 
 func _create_stun_indicator() -> void:
-	_stun_indicator = MeshInstance3D.new()
-	_stun_indicator.name = "StunIndicator"
-	var torus := TorusMesh.new()
-	torus.inner_radius = 0.25
-	torus.outer_radius = 0.35
-	_stun_indicator.mesh = torus
-	var mat := StandardMaterial3D.new()
-	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.albedo_color = Color(1.0, 0.9, 0.2, 0.9) # Bright yellow stun halo
-	_stun_indicator.material_override = mat
-	_stun_indicator.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_stun_indicator.position = Vector3(0.0, 2.05, 0.0) # Floating just over head
-	_stun_indicator.visible = false
-	add_child(_stun_indicator)
+	if not _stun_indicator:
+		_stun_indicator = get_node_or_null("StunIndicator")
+	if _stun_indicator:
+		_stun_indicator.visible = false
 
 func stun(duration: float) -> void:
 	if is_dead:
@@ -70,7 +60,7 @@ func stun(duration: float) -> void:
 func apply_knockback(force: Vector3) -> void:
 	if is_dead:
 		return
-	velocity += force
+	super.apply_knockback(force)
 
 func respawn():
 	global_position = spawn_pos
@@ -78,6 +68,10 @@ func respawn():
 	is_dead = false
 	is_stunned = false
 	_stun_timer = 0.0
+	locomotion_velocity = Vector3.ZERO
+	knockback_velocity = Vector3.ZERO
+	velocity = Vector3.ZERO
+	move = Vector3.ZERO
 	if _stun_indicator:
 		_stun_indicator.visible = false
 	ai.done=false
@@ -95,6 +89,8 @@ func _physics_process(delta: float) -> void:
 			if _stun_indicator:
 				_stun_indicator.visible = false
 		current_speed = 0.0
+		move = Vector3.ZERO
+		locomotion_velocity = Vector3.ZERO
 		super._physics_process(delta)
 		return
 

@@ -1,0 +1,262 @@
+[gd_scene load_steps=20 format=3 uid="uid://arena_koth_01"]
+
+[ext_resource type="Script" path="res://scenes/3d/arenas/arena_base.gd" id="1_base"]
+
+[sub_resource type="NavigationMesh" id="NavigationMesh_koth"]
+agent_radius = 0.5
+agent_height = 1.8
+agent_max_climb = 0.5
+agent_max_slope = 45.0
+
+[sub_resource type="BoxMesh" id="BoxMesh_floor"]
+size = Vector3(54, 1, 54)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
+size = Vector3(54, 1, 54)
+
+[sub_resource type="StandardMaterial3D" id="Mat_floor"]
+shading_mode = 0
+albedo_color = Color(0.62, 0.65, 0.70, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_wall"]
+shading_mode = 0
+albedo_color = Color(0.28, 0.32, 0.40, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_cover"]
+shading_mode = 0
+albedo_color = Color(0.38, 0.44, 0.52, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_wall_ns"]
+size = Vector3(54, 3.5, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wall_ns"]
+size = Vector3(54, 3.5, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_wall_ew"]
+size = Vector3(1, 3.5, 54)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wall_ew"]
+size = Vector3(1, 3.5, 54)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_pillar"]
+top_radius = 1.4
+bottom_radius = 1.4
+height = 3.5
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_pillar"]
+radius = 1.4
+height = 3.5
+
+[sub_resource type="BoxMesh" id="BoxMesh_lane_wall"]
+size = Vector3(12, 3.0, 1.2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_lane_wall"]
+size = Vector3(12, 3.0, 1.2)
+
+[sub_resource type="BoxMesh" id="BoxMesh_bunker"]
+size = Vector3(1.5, 3.0, 7.0)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_bunker"]
+size = Vector3(1.5, 3.0, 7.0)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_hill_pad"]
+top_radius = 6.5
+bottom_radius = 6.5
+height = 0.06
+radial_segments = 48
+
+[sub_resource type="StandardMaterial3D" id="Mat_hill_pad"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0.85, 0.88, 0.92, 0.25)
+
+[sub_resource type="TorusMesh" id="TorusMesh_hill_ring"]
+inner_radius = 6.25
+outer_radius = 6.6
+rings = 48
+ring_segments = 16
+
+[sub_resource type="StandardMaterial3D" id="Mat_hill_ring"]
+transparency = 1
+shading_mode = 0
+albedo_color = Color(0.85, 0.88, 0.92, 0.85)
+
+[node name="ArenaKOTH" type="Node3D"]
+script = ExtResource("1_base")
+arena_name = "King of the Hill (Highland Plaza)"
+arena_size = Vector2(52, 52)
+has_hill = true
+hill_radius = 6.5
+hill_win_score = 45.0
+hill_score_rate = 1.0
+hill_capture_time = 2.0
+hill_rotate_interval = 25.0
+hill_positions = Array[Vector3]([Vector3(0, 0, 0), Vector3(0, 0, -14), Vector3(0, 0, 14)])
+
+[node name="NavRegion" type="NavigationRegion3D" parent="."]
+navigation_mesh = SubResource("NavigationMesh_koth")
+
+[node name="Floor" type="StaticBody3D" parent="NavRegion"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+collision_mask = 0
+
+[node name="Mesh" type="MeshInstance3D" parent="NavRegion/Floor"]
+mesh = SubResource("BoxMesh_floor")
+surface_material_override/0 = SubResource("Mat_floor")
+
+[node name="Col" type="CollisionShape3D" parent="NavRegion/Floor"]
+shape = SubResource("BoxShape3D_floor")
+
+[node name="WallNorth" type="StaticBody3D" parent="NavRegion"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.75, -26.5)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavRegion/WallNorth"]
+mesh = SubResource("BoxMesh_wall_ns")
+surface_material_override/0 = SubResource("Mat_wall")
+
+[node name="Col" type="CollisionShape3D" parent="NavRegion/WallNorth"]
+shape = SubResource("BoxShape3D_wall_ns")
+
+[node name="WallSouth" type="StaticBody3D" parent="NavRegion"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.75, 26.5)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavRegion/WallSouth"]
+mesh = SubResource("BoxMesh_wall_ns")
+surface_material_override/0 = SubResource("Mat_wall")
+
+[node name="Col" type="CollisionShape3D" parent="NavRegion/WallSouth"]
+shape = SubResource("BoxShape3D_wall_ns")
+
+[node name="WallWest" type="StaticBody3D" parent="NavRegion"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -26.5, 1.75, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavRegion/WallWest"]
+mesh = SubResource("BoxMesh_wall_ew")
+surface_material_override/0 = SubResource("Mat_wall")
+
+[node name="Col" type="CollisionShape3D" parent="NavRegion/WallWest"]
+shape = SubResource("BoxShape3D_wall_ew")
+
+[node name="WallEast" type="StaticBody3D" parent="NavRegion"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26.5, 1.75, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavRegion/WallEast"]
+mesh = SubResource("BoxMesh_wall_ew")
+surface_material_override/0 = SubResource("Mat_wall")
+
+[node name="Col" type="CollisionShape3D" parent="NavRegion/WallEast"]
+shape = SubResource("BoxShape3D_wall_ew")
+
+[node name="PillarNW" type="StaticBody3D" parent="NavRegion" groups=["cover", "obstacle"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 1.75, -8)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavRegion/PillarNW"]
+mesh = SubResource("CylinderMesh_pillar")
+surface_material_override/0 = SubResource("Mat_cover")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NavRegion/PillarNW"]
+shape = SubResource("CylinderShape3D_pillar")
+
+[node name="PillarNE" type="StaticBody3D" parent="NavRegion" groups=["cover", "obstacle"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 1.75, -8)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavRegion/PillarNE"]
+mesh = SubResource("CylinderMesh_pillar")
+surface_material_override/0 = SubResource("Mat_cover")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NavRegion/PillarNE"]
+shape = SubResource("CylinderShape3D_pillar")
+
+[node name="PillarSW" type="StaticBody3D" parent="NavRegion" groups=["cover", "obstacle"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9, 1.75, 8)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavRegion/PillarSW"]
+mesh = SubResource("CylinderMesh_pillar")
+surface_material_override/0 = SubResource("Mat_cover")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NavRegion/PillarSW"]
+shape = SubResource("CylinderShape3D_pillar")
+
+[node name="PillarSE" type="StaticBody3D" parent="NavRegion" groups=["cover", "obstacle"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9, 1.75, 8)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavRegion/PillarSE"]
+mesh = SubResource("CylinderMesh_pillar")
+surface_material_override/0 = SubResource("Mat_cover")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NavRegion/PillarSE"]
+shape = SubResource("CylinderShape3D_pillar")
+
+[node name="LaneWallNW" type="StaticBody3D" parent="NavRegion" groups=["cover", "obstacle"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11, 1.5, -16)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavRegion/LaneWallNW"]
+mesh = SubResource("BoxMesh_lane_wall")
+surface_material_override/0 = SubResource("Mat_cover")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NavRegion/LaneWallNW"]
+shape = SubResource("BoxShape3D_lane_wall")
+
+[node name="LaneWallNE" type="StaticBody3D" parent="NavRegion" groups=["cover", "obstacle"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 1.5, -16)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavRegion/LaneWallNE"]
+mesh = SubResource("BoxMesh_lane_wall")
+surface_material_override/0 = SubResource("Mat_cover")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NavRegion/LaneWallNE"]
+shape = SubResource("BoxShape3D_lane_wall")
+
+[node name="LaneWallSW" type="StaticBody3D" parent="NavRegion" groups=["cover", "obstacle"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11, 1.5, 16)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavRegion/LaneWallSW"]
+mesh = SubResource("BoxMesh_lane_wall")
+surface_material_override/0 = SubResource("Mat_cover")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NavRegion/LaneWallSW"]
+shape = SubResource("BoxShape3D_lane_wall")
+
+[node name="LaneWallSE" type="StaticBody3D" parent="NavRegion" groups=["cover", "obstacle"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 1.5, 16)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavRegion/LaneWallSE"]
+mesh = SubResource("BoxMesh_lane_wall")
+surface_material_override/0 = SubResource("Mat_cover")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NavRegion/LaneWallSE"]
+shape = SubResource("BoxShape3D_lane_wall")
+
+[node name="SpawnBunkerWest" type="StaticBody3D" parent="NavRegion" groups=["cover", "obstacle"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16.5, 1.5, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavRegion/SpawnBunkerWest"]
+mesh = SubResource("BoxMesh_bunker")
+surface_material_override/0 = SubResource("Mat_cover")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NavRegion/SpawnBunkerWest"]
+shape = SubResource("BoxShape3D_bunker")
+
+[node name="SpawnBunkerEast" type="StaticBody3D" parent="NavRegion" groups=["cover", "obstacle"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.5, 1.5, 0)
+
+[node name="Mesh" type="MeshInstance3D" parent="NavRegion/SpawnBunkerEast"]
+mesh = SubResource("BoxMesh_bunker")
+surface_material_override/0 = SubResource("Mat_cover")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NavRegion/SpawnBunkerEast"]
+shape = SubResource("BoxShape3D_bunker")
+
+[node name="HillZone" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.05, 0)
+
+[node name="FloorPad" type="MeshInstance3D" parent="HillZone"]
+material_override = SubResource("Mat_hill_pad")
+cast_shadow = 0
+mesh = SubResource("CylinderMesh_hill_pad")
+
+[node name="RingOutline" type="MeshInstance3D" parent="HillZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.06, 0)
+material_override = SubResource("Mat_hill_ring")
+cast_shadow = 0
+mesh = SubResource("TorusMesh_hill_ring")

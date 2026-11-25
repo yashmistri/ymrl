@@ -15,10 +15,11 @@ for _stream in (sys.stdout, sys.stderr):
 
 import argparse
 import pathlib
+import shutil
 from typing import Callable
 
 from stable_baselines3 import PPO
-from stable_baselines3.common.callbacks import CheckpointCallback
+from stable_baselines3.common.callbacks import BaseCallback, CallbackList, CheckpointCallback
 from stable_baselines3.common.vec_env.vec_monitor import VecMonitor
 
 from godot_rl.core.utils import can_import
@@ -82,6 +83,18 @@ parser.add_argument(
     default=None,
     type=str,
     help="If included, will export onnx file after training to the path specified.",
+)
+parser.add_argument(
+    "--freeze_opponent_frequency",
+    default=50_000,
+    type=int,
+    help="How often (in timesteps) to update models/frozen_opponent.onnx with current policy weights for selfplay.",
+)
+parser.add_argument(
+    "--opponent_onnx_path",
+    default="models/frozen_opponent.onnx",
+    type=str,
+    help="Path to the frozen opponent ONNX model to update periodically during self-play training.",
 )
 parser.add_argument(
     "--timesteps",
@@ -198,6 +211,23 @@ parser.add_argument(
 
 args, extras = parser.parse_known_args()
 
+PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent
+
+def resolve_path(p: str | None) -> str | None:
+    if p is None:
+        return None
+    path = pathlib.Path(p)
+    if not path.is_absolute():
+        path = PROJECT_ROOT / path
+    return str(path.resolve())
+
+args.opponent_onnx_path = resolve_path(args.opponent_onnx_path)
+args.save_model_path = resolve_path(args.save_model_path)
+args.resume_model_path = resolve_path(args.resume_model_path)
+args.onnx_export_path = resolve_path(args.onnx_export_path)
+args.env_path = resolve_path(args.env_path)
+args.experiment_dir = resolve_path(args.experiment_dir)
+
 
 def resolve_batch_size(n_steps: int, n_envs: int, requested: int | None) -> int:
     """Pick a batch size that divides the rollout exactly.
@@ -220,6 +250,46 @@ def resolve_batch_size(n_steps: int, n_envs: int, requested: int | None) -> int:
     return requested
 
 
+def export_policy_as_onnx(model, onnx_model_path: str):
+    """Fast, self-contained ONNX export with dynamo=False to avoid external data files."""
+    import torch
+    import onnx
+    from godot_rl.wrappers.onnx.stable_baselines_export import OnnxablePolicy
+
+    original_device = model.device
+    policy = model.policy.to("cpu")
+    onnxable_model = OnnxablePolicy(
+        ["obs"],
+        policy.features_extractor,
+        policy.mlp_extractor,
+        policy.action_net,
+        policy.value_net,
+        False,
+    )
+    dummy_input = [torch.zeros(1, EXPECTED_OBS_SIZE, dtype=torch.float32)]
+
+    torch.onnx.export(
+        onnxable_model,
+        args=(dummy_input, torch.zeros(1).float()),
+        f=onnx_model_path,
+        opset_version=17,
+        input_names=["obs", "state_ins"],
+        output_names=["output", "state_outs"],
+        dynamic_axes={
+            "obs": {0: "batch_size"},
+            "state_ins": {0: "batch_size"},
+            "output": {0: "batch_size"},
+            "state_outs": {0: "batch_size"},
+        },
+        dynamo=False,
+    )
+    model.policy.to(original_device)
+
+    # Ensure single self-contained file
+    om = onnx.load(onnx_model_path)
+    onnx.save_model(om, onnx_model_path, save_as_external_data=False)
+
+
 def handle_onnx_export():
     # Enforce the extension of onnx and zip when saving model to avoid potential conflicts in case of same name
     # and extension used for both
@@ -228,7 +298,7 @@ def handle_onnx_export():
     try:
         path_onnx = pathlib.Path(args.onnx_export_path).with_suffix(".onnx")
         print("Exporting onnx to: " + os.path.abspath(path_onnx))
-        export_model_as_onnx(model, str(path_onnx))
+        export_policy_as_onnx(model, str(path_onnx))
         return True
     except Exception as e:
         # The export is optional; losing it must never cost us the .zip.
@@ -369,12 +439,12 @@ env = VecMonitor(env)
 #
 # Failing here with an explicit message is much better than letting PPO.load
 # die on a tensor-shape mismatch, which reads like a corrupted checkpoint.
-EXPECTED_OBS_SIZE = 145
+EXPECTED_OBS_SIZE = 154
 # Alphabetical: this is the order Godot's JSON.stringify emits, which is what
 # the trainer builds MultiDiscrete from. soldier3_ai.gd::get_action_space()
 # declares its keys in the same order so Godot's slicing order matches.
-# attack(2), block(2), move(9), sprint(2), turn(3)
-EXPECTED_ACTION_HEADS = (2, 2, 9, 2, 3)
+# anchor(9), attack(2), block(2), sprint(2), stance(3)
+EXPECTED_ACTION_HEADS = (9, 2, 2, 2, 3)
 EXPECTED_ACTION_HEAD_COUNTS = tuple(sorted(EXPECTED_ACTION_HEADS))
 
 
@@ -480,7 +550,13 @@ else:
     # --linear_lr_schedule SHOULD: without this it was silently ignored on
     # resume, leaving the LR pinned for the whole run and the policy unable to
     # settle -- the 100k run oscillated 0.28-0.62 success instead of converging.
-    model = PPO.load(path_zip, env=env, tensorboard_log=args.experiment_dir)
+    batch_size = resolve_batch_size(args.n_steps, env.num_envs, args.batch_size)
+    custom_objects = {
+        "observation_space": env.observation_space,
+        "n_steps": args.n_steps,
+        "batch_size": batch_size,
+    }
+    model = PPO.load(path_zip, env=env, tensorboard_log=args.experiment_dir, custom_objects=custom_objects)
     if args.linear_lr_schedule:
         model.learning_rate = linear_schedule(args.learning_rate)
         model._setup_lr_schedule()
@@ -500,6 +576,38 @@ else:
         f"n_epochs={model.n_epochs} device={model.device}"
     )
 
+class FrozenOpponentCallback(BaseCallback):
+    """Periodically exports current policy to an ONNX model for self-play opponents."""
+
+    def __init__(self, freeze_freq: int, opponent_path: str, verbose: int = 1):
+        super().__init__(verbose)
+        self.freeze_freq = freeze_freq
+        self.opponent_path = opponent_path
+        self.last_freeze_step = 0
+        self.freeze_count = 0
+
+    def _on_training_start(self) -> None:
+        self.last_freeze_step = self.num_timesteps
+
+    def _on_step(self) -> bool:
+        if self.num_timesteps - self.last_freeze_step >= self.freeze_freq:
+            self.last_freeze_step = self.num_timesteps
+            self.freeze_count += 1
+            self._export_frozen_opponent()
+        return True
+
+    def _export_frozen_opponent(self):
+        try:
+            os.makedirs(os.path.dirname(os.path.abspath(self.opponent_path)), exist_ok=True)
+            print(f"\n[SelfPlay] Freezing current policy as opponent at step {self.num_timesteps} -> {self.opponent_path}", flush=True)
+            export_policy_as_onnx(self.model, self.opponent_path)
+            print(f"[SelfPlay] Frozen opponent updated successfully (mtime: {os.path.getmtime(self.opponent_path)})!\n", flush=True)
+        except Exception as e:
+            print(f"[SelfPlay] WARNING: Failed to freeze opponent at step {self.num_timesteps}: {e}", flush=True)
+            if hasattr(self.model, "device"):
+                self.model.policy.to(self.model.device)
+
+
 if args.inference:
     obs = env.reset()
     for i in range(args.timesteps):
@@ -507,6 +615,7 @@ if args.inference:
         obs, reward, done, info = env.step(action)
 else:
     learn_arguments = dict(total_timesteps=args.timesteps, tb_log_name=args.experiment_name)
+    callbacks = []
     if args.save_checkpoint_frequency:
         print("Checkpoint saving enabled. Checkpoints will be saved to: " + abs_path_checkpoint)
         checkpoint_callback = CheckpointCallback(
@@ -514,7 +623,16 @@ else:
             save_path=path_checkpoint,
             name_prefix=args.experiment_name,
         )
-        learn_arguments["callback"] = checkpoint_callback
+        callbacks.append(checkpoint_callback)
+    if args.freeze_opponent_frequency and args.freeze_opponent_frequency > 0:
+        freeze_cb = FrozenOpponentCallback(
+            freeze_freq=args.freeze_opponent_frequency,
+            opponent_path=args.opponent_onnx_path,
+        )
+        callbacks.append(freeze_cb)
+
+    if callbacks:
+        learn_arguments["callback"] = CallbackList(callbacks)
     try:
         model.learn(**learn_arguments)
     except (KeyboardInterrupt, ConnectionError, ConnectionResetError):

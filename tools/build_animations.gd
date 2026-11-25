@@ -20,10 +20,15 @@ const OUT_DIR := "res://animations"
 #   strafe.fbx          -X  left
 #   strafe (2).fbx      +X  right
 const CLIPS := {
-	"walk_forward": "sword and shield walk.fbx",
-	"walk_backward": "sword and shield walk (2).fbx",
-	"walk_left": "sword and shield strafe.fbx",
-	"walk_right": "sword and shield strafe (2).fbx",
+	"walk_forward": {"file": "sword and shield walk.fbx", "loop": true},
+	"walk_backward": {"file": "sword and shield walk (2).fbx", "loop": true},
+	"walk_left": {"file": "sword and shield strafe.fbx", "loop": true},
+	"walk_right": {"file": "sword and shield strafe (2).fbx", "loop": true},
+	"idle": {"file": "sword and shield idle.fbx", "loop": true},
+	"attack": {"file": "sword and shield attack.fbx", "loop": false},
+	"slash": {"file": "sword and shield slash.fbx", "loop": false},
+	"block": {"file": "sword and shield block idle.fbx", "loop": true},
+	"cast": {"file": "sword and shield casting.fbx", "loop": false},
 }
 const HIPS := "mixamorig_Hips"
 
@@ -32,12 +37,13 @@ func _init() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_DIR))
 	var failed := false
 	for key in CLIPS:
-		if not _build(key, CLIPS[key]):
+		var cfg = CLIPS[key]
+		if not _build(key, cfg["file"], cfg["loop"]):
 			failed = true
 	quit(1 if failed else 0)
 
 
-func _build(key: String, file: String) -> bool:
+func _build(key: String, file: String, loop: bool) -> bool:
 	var scene_path := ANIM_DIR + "/" + file
 	var packed: PackedScene = load(scene_path)
 	if packed == null:
@@ -59,7 +65,7 @@ func _build(key: String, file: String) -> bool:
 
 	var anim := Animation.new()
 	anim.length = source.length
-	anim.loop_mode = Animation.LOOP_LINEAR
+	anim.loop_mode = Animation.LOOP_LINEAR if loop else Animation.LOOP_NONE
 	anim.step = source.step
 
 	var kept := 0
